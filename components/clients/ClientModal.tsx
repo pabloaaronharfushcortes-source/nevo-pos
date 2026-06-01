@@ -19,13 +19,18 @@ type FormState = {
   preferred_barber_id: string
 }
 
+const inputClass = `
+  w-full px-0 py-1.5 text-sm bg-transparent border-0 border-b
+  focus:outline-none focus:ring-0 transition-colors
+`.trim()
+
 export default function ClientModal({ barbers, client, onClose, onSaved }: Props) {
   const [form, setForm] = useState<FormState>({
-    name: client?.name ?? '',
-    phone: client?.phone ?? '',
-    email: client?.email ?? '',
-    whatsapp_id: client?.whatsapp_id ?? '',
-    notes: client?.notes ?? '',
+    name:                client?.name ?? '',
+    phone:               client?.phone ?? '',
+    email:               client?.email ?? '',
+    whatsapp_id:         client?.whatsapp_id ?? '',
+    notes:               client?.notes ?? '',
     preferred_barber_id: client?.preferred_barber_id ?? '',
   })
   const [submitting, setSubmitting] = useState(false)
@@ -34,11 +39,11 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
   useEffect(() => {
     if (client) {
       setForm({
-        name: client.name,
-        phone: client.phone ?? '',
-        email: client.email ?? '',
-        whatsapp_id: client.whatsapp_id ?? '',
-        notes: client.notes ?? '',
+        name:                client.name,
+        phone:               client.phone ?? '',
+        email:               client.email ?? '',
+        whatsapp_id:         client.whatsapp_id ?? '',
+        notes:               client.notes ?? '',
         preferred_barber_id: client.preferred_barber_id ?? '',
       })
     }
@@ -50,36 +55,28 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
 
   async function handleSubmit() {
     if (!form.name.trim()) { setError('El nombre es requerido'); return }
-
     setSubmitting(true)
     setError(null)
 
     const payload = {
-      name: form.name.trim(),
-      phone: form.phone.trim() || undefined,
-      email: form.email.trim() || undefined,
-      whatsapp_id: form.whatsapp_id.trim() || undefined,
-      notes: form.notes.trim() || undefined,
+      name:                form.name.trim(),
+      phone:               form.phone.trim() || undefined,
+      email:               form.email.trim() || undefined,
+      whatsapp_id:         form.whatsapp_id.trim() || undefined,
+      notes:               form.notes.trim() || undefined,
       preferred_barber_id: form.preferred_barber_id || null,
     }
 
     try {
-      const url = client ? `/api/clients/${client.id}` : '/api/clients'
+      const url    = client ? `/api/clients/${client.id}` : '/api/clients'
       const method = client ? 'PATCH' : 'POST'
-
-      const res = await fetch(url, {
+      const res    = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-
       const data: Client | { error: string } = await res.json()
-
-      if (!res.ok || 'error' in data) {
-        setError('error' in data ? data.error : 'Error al guardar')
-        return
-      }
-
+      if (!res.ok || 'error' in data) { setError('error' in data ? data.error : 'Error al guardar'); return }
       onSaved(data)
     } catch {
       setError('Error de conexión')
@@ -91,108 +88,174 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
   const isEdit = !!client
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 flex flex-col max-h-[90vh]">
-        <div className="px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.75)' }}>
+      <div
+        className="w-full max-w-md mx-4 flex flex-col max-h-[90vh]"
+        style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+          <h2 className="font-display text-lg font-medium" style={{ color: 'var(--ink-primary)' }}>
             {isEdit ? 'Editar cliente' : 'Nuevo cliente'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+          <button
+            onClick={onClose}
+            className="text-lg leading-none transition-colors"
+            style={{ color: 'var(--ink-muted)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ink-primary)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)' }}
+          >
+            ×
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {/* Nombre */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Nombre <span className="text-red-500">*</span>
+            <label className="label-caps block mb-2">
+              Nombre <span style={{ color: 'var(--brass)' }}>*</span>
             </label>
             <input
               type="text"
               value={form.name}
               onChange={e => set('name', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+              className={inputClass}
+              style={{
+                borderColor: 'var(--border-default)',
+                color: 'var(--ink-primary)',
+              }}
+              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
+              onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
               placeholder="Nombre completo"
               autoFocus
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Teléfono / Correo */}
+          <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Teléfono</label>
+              <label className="label-caps block mb-2">Teléfono</label>
               <input
                 type="tel"
                 value={form.phone}
                 onChange={e => set('phone', e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                className={inputClass}
+                style={{ borderColor: 'var(--border-default)', color: 'var(--ink-primary)' }}
+                onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
+                onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
                 placeholder="+521XXXXXXXXXX"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Correo</label>
+              <label className="label-caps block mb-2">Correo</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={e => set('email', e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                className={inputClass}
+                style={{ borderColor: 'var(--border-default)', color: 'var(--ink-primary)' }}
+                onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
+                onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
                 placeholder="correo@ejemplo.com"
               />
             </div>
           </div>
 
+          {/* WhatsApp ID */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="label-caps block mb-2">
               WhatsApp ID
-              <span className="text-gray-400 font-normal ml-1">(para reconocimiento del agente)</span>
+              <span className="normal-case ml-1.5" style={{ color: 'var(--ink-muted)', letterSpacing: 0 }}>
+                — para el agente
+              </span>
             </label>
             <input
               type="text"
               value={form.whatsapp_id}
               onChange={e => set('whatsapp_id', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+              className={`${inputClass} font-mono`}
+              style={{ borderColor: 'var(--border-default)', color: 'var(--ink-primary)' }}
+              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
+              onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
               placeholder="521XXXXXXXXXX"
             />
           </div>
 
+          {/* Barbero preferido */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Barbero preferido</label>
+            <label className="label-caps block mb-2">Barbero preferido</label>
             <select
               value={form.preferred_barber_id}
               onChange={e => set('preferred_barber_id', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+              className="w-full py-1.5 text-sm border-0 border-b focus:outline-none focus:ring-0 transition-colors bg-transparent"
+              style={{
+                borderColor: 'var(--border-default)',
+                color: form.preferred_barber_id ? 'var(--ink-primary)' : 'var(--ink-muted)',
+              }}
+              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
+              onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
             >
-              <option value="">Sin preferencia</option>
+              <option value="" style={{ background: 'var(--surface-2)', color: 'var(--ink-secondary)' }}>
+                Sin preferencia
+              </option>
               {barbers.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
+                <option key={b.id} value={b.id} style={{ background: 'var(--surface-2)', color: 'var(--ink-primary)' }}>
+                  {b.name}
+                </option>
               ))}
             </select>
           </div>
 
+          {/* Notas */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Notas</label>
+            <label className="label-caps block mb-2">Notas</label>
             <textarea
               value={form.notes}
               onChange={e => set('notes', e.target.value)}
               rows={3}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none"
+              className="w-full px-0 py-1.5 text-sm bg-transparent border-0 border-b focus:outline-none focus:ring-0 resize-none transition-colors"
+              style={{
+                borderColor: 'var(--border-default)',
+                color: 'var(--ink-primary)',
+              }}
+              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
+              onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
               placeholder="Tipo de cabello, alergias, preferencias…"
             />
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t flex-shrink-0 space-y-2">
-          {error && <p className="text-sm text-red-600">{error}</p>}
+        {/* Footer */}
+        <div className="px-6 py-4 space-y-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+          {error && (
+            <p className="text-xs" style={{ color: '#E05252' }}>{error}</p>
+          )}
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 py-2 text-xs uppercase transition-colors"
+              style={{
+                border: '1px solid var(--border-default)',
+                color: 'var(--ink-secondary)',
+                letterSpacing: '0.08em',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex-1 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
+              className="flex-1 py-2 text-xs font-medium uppercase transition-opacity disabled:opacity-40"
+              style={{
+                background: 'var(--brass)',
+                color: '#0C0A09',
+                letterSpacing: '0.08em',
+              }}
             >
-              {submitting ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear cliente'}
+              {submitting ? '…' : isEdit ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </div>

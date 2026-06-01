@@ -15,9 +15,15 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="w-full text-left text-sm text-gray-400 hover:text-white transition-colors px-3 py-2 rounded"
+      className="w-full text-left text-xs uppercase px-2 py-2 transition-colors"
+      style={{
+        color: 'var(--ink-muted)',
+        letterSpacing: '0.08em',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ink-secondary)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)' }}
     >
-      Cerrar sesión
+      Salir
     </button>
   )
 }
