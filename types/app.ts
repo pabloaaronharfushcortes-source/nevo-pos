@@ -38,6 +38,33 @@ export type AuthenticatedUser = {
   name: string
 }
 
+// Ticket de cola con sus relaciones expandidas
+export type QueueTicketWithRelations = {
+  id: string
+  tenant_id: string
+  client_id: string | null
+  barber_id: string
+  service_id: string | null
+  ticket_number: number
+  estimated_start_at: string
+  status: string
+  source: string
+  created_at: string
+  client: { id: string; name: string; phone: string | null } | null
+  barber: { id: string; name: string } | null
+  service: { id: string; name: string; duration_minutes: number } | null
+}
+
+// Ticket simplificado para la pantalla TV /display
+export type DisplayTicket = {
+  id: string
+  ticket_number: number
+  status: string
+  estimated_start_at: string
+  client_first_name: string
+  barber_name: string
+}
+
 // Cita con sus relaciones expandidas (resultado de SELECT con joins)
 export type AppointmentWithRelations = {
   id: string
