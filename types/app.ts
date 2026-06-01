@@ -65,6 +65,38 @@ export type DisplayTicket = {
   barber_name: string
 }
 
+// Venta con sus relaciones expandidas
+export type SaleWithRelations = {
+  id: string
+  tenant_id: string
+  appointment_id: string | null
+  queue_ticket_id: string | null
+  client_id: string | null
+  barber_id: string
+  cashier_id: string
+  cash_register_id: string | null
+  subtotal: number
+  discount: number
+  total: number
+  payment_method: string
+  payment_reference: string | null
+  notes: string | null
+  created_at: string
+  deleted_at: string | null
+  client: { id: string; name: string } | null
+  barber: { id: string; name: string } | null
+  cashier: { id: string; name: string } | null
+  items: Array<{
+    id: string
+    type: string
+    name: string
+    price: number
+    quantity: number
+    subtotal: number
+    service_id: string | null
+  }>
+}
+
 // Cita con sus relaciones expandidas (resultado de SELECT con joins)
 export type AppointmentWithRelations = {
   id: string

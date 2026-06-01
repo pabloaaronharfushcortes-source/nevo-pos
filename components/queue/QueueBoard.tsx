@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { Barber, Service, QueueTicketWithRelations } from '@/types/app'
 import { useQueue } from '@/hooks/useQueue'
 import NewTicketModal from './NewTicketModal'
+import SaleModal from '@/components/pos/SaleModal'
 
 type Props = {
   tenantId: string
@@ -42,11 +43,23 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
 
 const STATUS_ORDER = ['waiting', 'called', 'in_progress']
 
+type SaleContext = {
+  ticketId: string
+  barberId: string
+  barberName: string
+  clientId?: string
+  clientName?: string
+  serviceId?: string
+  serviceName?: string
+  servicePrice?: number
+}
+
 export default function QueueBoard({ tenantId, initialTickets, barbers, services }: Props) {
   const { tickets, loading, refresh } = useQueue(tenantId, initialTickets)
   const [showNewModal, setShowNewModal] = useState(false)
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [saleCtx, setSaleCtx] = useState<SaleContext | null>(null)
 
   async function updateStatus(ticketId: string, status: string) {
     setActionLoading(ticketId)
@@ -143,6 +156,29 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
 
                       {/* Acciones */}
                       <div className="flex items-center gap-2 flex-shrink-0">
+                        {ticket.status === 'in_progress' && (
+                          <button
+                            onClick={() => {
+                              const svc = ticket.service
+                                ? services.find(s => s.id === ticket.service!.id)
+                                : undefined
+                              setSaleCtx({
+                                ticketId: ticket.id,
+                                barberId: ticket.barber_id,
+                                barberName: ticket.barber?.name ?? '',
+                                clientId: ticket.client?.id,
+                                clientName: ticket.client?.name,
+                                serviceId: ticket.service?.id,
+                                serviceName: ticket.service?.name,
+                                servicePrice: svc?.price,
+                              })
+                            }}
+                            disabled={!!actionLoading}
+                            className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                          >
+                            Cobrar
+                          </button>
+                        )}
                         {confirmCancelId === ticket.id ? (
                           <>
                             <span className="text-xs text-gray-500">¿Cancelar?</span>
@@ -195,6 +231,27 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
           onClose={() => setShowNewModal(false)}
           onCreated={() => {
             setShowNewModal(false)
+            refresh()
+          }}
+        />
+      )}
+
+      {saleCtx !== null && (
+        <SaleModal
+          barbers={barbers}
+          services={services}
+          preselectedBarberId={saleCtx.barberId}
+          initialItems={
+            saleCtx.serviceId && saleCtx.serviceName && saleCtx.servicePrice !== undefined
+              ? [{ serviceId: saleCtx.serviceId, name: saleCtx.serviceName, price: saleCtx.servicePrice }]
+              : []
+          }
+          clientId={saleCtx.clientId}
+          clientName={saleCtx.clientName}
+          queueTicketId={saleCtx.ticketId}
+          onClose={() => setSaleCtx(null)}
+          onSaved={() => {
+            setSaleCtx(null)
             refresh()
           }}
         />
