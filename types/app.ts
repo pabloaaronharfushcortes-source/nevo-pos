@@ -37,3 +37,23 @@ export type AuthenticatedUser = {
   role: UserRole
   name: string
 }
+
+// Cita con sus relaciones expandidas (resultado de SELECT con joins)
+export type AppointmentWithRelations = {
+  id: string
+  tenant_id: string
+  client_id: string
+  barber_id: string
+  service_id: string
+  starts_at: string
+  ends_at: string
+  status: string
+  notes: string | null
+  booked_via: string
+  created_at: string
+  cancelled_at: string | null
+  cancellation_reason: string | null
+  client: { id: string; name: string; phone: string | null } | null
+  barber: { id: string; name: string } | null
+  service: { id: string; name: string; duration_minutes: number; price: number } | null
+}
