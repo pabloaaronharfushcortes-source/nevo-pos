@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
 import { getCurrentQuincena, computeCommission } from '@/lib/utils/commissions'
+import { updateClientAfterSale } from '@/lib/utils/clients'
 import type { Database } from '@/types/database'
 
 type SaleInsert = Database['public']['Tables']['sales']['Insert']
@@ -148,6 +149,11 @@ export async function POST(request: NextRequest) {
   }
   // No es fatal si falla — la venta ya se creó
   await supabase.from('commissions').insert(commissionInsert)
+
+  // Actualizar estadísticas del cliente (stamps, total_spent, clasificación)
+  if (clientId) {
+    await updateClientAfterSale(supabase, clientId, total)
+  }
 
   // Marcar ticket/cita como completado
   if (queueTicketId) {

@@ -65,6 +65,24 @@ export type DisplayTicket = {
   barber_name: string
 }
 
+// Entrada unificada del historial de visitas de un cliente
+export type VisitEntry = {
+  id: string
+  date: string
+  type: 'appointment' | 'sale'
+  barber_name: string | null
+  services: string[]
+  total: number | null
+  status: string
+  payment_method: string | null
+}
+
+// Perfil completo del cliente con barbero preferido e historial
+export type ClientWithProfile = Client & {
+  preferred_barber: { id: string; name: string } | null
+  visit_history: VisitEntry[]
+}
+
 // Venta con sus relaciones expandidas
 export type SaleWithRelations = {
   id: string
