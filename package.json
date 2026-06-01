@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate:supabase-types": "npx supabase gen types typescript --project-id qjybzasvjsepeirxqquo --schema public > types/database.ts",
+    "test:tenant-isolation": "node scripts/tenant-isolation-test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
