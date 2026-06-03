@@ -14,6 +14,13 @@ export type Sale = Tables['sales']['Row']
 export type SaleItem = Tables['sale_items']['Row']
 export type Commission = Tables['commissions']['Row']
 export type CashRegister = Tables['cash_registers']['Row']
+export type Conversation = Tables['conversations']['Row']
+export type Message = Tables['messages']['Row']
+
+export type ConversationMode = 'agent' | 'human'
+export type MessageDirection = 'inbound' | 'outbound'
+export type MessageType = 'text' | 'image' | 'audio' | 'video' | 'document'
+export type MessageSentBy = 'agent' | 'human' | 'client'
 
 export type UserRole = 'admin' | 'receptionist' | 'barber'
 
@@ -75,6 +82,25 @@ export type VisitEntry = {
   total: number | null
   status: string
   payment_method: string | null
+}
+
+// Conversación de WhatsApp con datos del cliente para la lista del panel
+export type ConversationWithClient = {
+  id: string
+  tenant_id: string
+  client_id: string | null
+  whatsapp_id: string
+  mode: string
+  last_message_at: string | null
+  last_message_preview: string | null
+  unread_human_count: number
+  created_at: string
+  client: { id: string; name: string; phone: string | null; classification: string } | null
+}
+
+// Conversación con su hilo completo de mensajes (vista de detalle)
+export type ConversationWithMessages = ConversationWithClient & {
+  messages: Message[]
 }
 
 // Perfil completo del cliente con barbero preferido e historial
