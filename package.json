@@ -8,8 +8,13 @@
     "start": "next start",
     "lint": "next lint",
     "generate:supabase-types": "npx supabase gen types typescript --project-id qjybzasvjsepeirxqquo --schema public > types/database.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "test:tenant-isolation": "node scripts/tenant-isolation-test.mjs",
-    "seed": "npx tsx scripts/seed.ts"
+    "test:load": "k6 run tests/load/webhook.js",
+    "seed": "npx tsx scripts/seed.ts",
+    "simulate": "npx tsx scripts/simulate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
@@ -26,6 +31,7 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -35,6 +41,7 @@
     "supabase": "^2.102.0",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }
