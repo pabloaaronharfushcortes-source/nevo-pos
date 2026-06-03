@@ -17,9 +17,14 @@ export default async function ClientsPage() {
     .order('sort_order')
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-6 py-4 bg-white border-b flex-shrink-0">
-        <h1 className="text-xl font-semibold text-gray-900">Clientes</h1>
+    <div className="flex flex-col h-full" style={{ background: 'var(--surface-0)' }}>
+      <div
+        className="px-6 py-4 flex-shrink-0 border-b"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <h1 className="font-display text-xl font-medium" style={{ color: 'var(--ink-primary)' }}>
+          Clientes
+        </h1>
       </div>
       <div className="flex-1 min-h-0">
         <ClientsBoard barbers={barbers ?? []} />

@@ -21,10 +21,11 @@ type ApiResponse = {
   limit: number
 }
 
-const CLASSIFICATION_STYLE: Record<string, string> = {
-  new: 'bg-gray-100 text-gray-600',
-  recurrent: 'bg-blue-100 text-blue-700',
-  vip: 'bg-amber-100 text-amber-700',
+// Clase de badge industrial por clasificación — definida en globals.css
+const BADGE_CLASS: Record<string, string> = {
+  new: 'badge-new',
+  recurrent: 'badge-recurrent',
+  vip: 'badge-vip',
 }
 
 const CLASSIFICATION_LABEL: Record<string, string> = {
@@ -116,41 +117,58 @@ export default function ClientsBoard({ barbers }: Props) {
   return (
     <div className="flex h-full">
       {/* Panel izquierdo — lista */}
-      <div className="w-80 flex-shrink-0 flex flex-col border-r bg-white">
+      <div
+        className="w-80 flex-shrink-0 flex flex-col border-r"
+        style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}
+      >
         {/* Búsqueda y filtros */}
-        <div className="px-4 py-3 border-b space-y-2">
+        <div
+          className="px-4 py-3 space-y-3 border-b"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre o teléfono…"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="w-full px-0 py-1.5 text-sm bg-transparent border-0 border-b focus:outline-none focus:ring-0 transition-colors"
+            style={{ borderColor: 'var(--border-default)', color: 'var(--ink-primary)' }}
+            onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
+            onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
           />
           <div className="flex gap-1 flex-wrap">
-            {FILTER_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setClassification(opt.value)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                  classification === opt.value
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+            {FILTER_OPTIONS.map(opt => {
+              const active = classification === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setClassification(opt.value)}
+                  className="px-2.5 py-1 text-2xs font-medium uppercase tracking-wide transition-colors"
+                  style={
+                    active
+                      ? { background: 'var(--brass)', color: '#0C0A09' }
+                      : { background: 'var(--surface-3)', color: 'var(--ink-secondary)' }
+                  }
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {/* Contador + botón nuevo */}
-        <div className="px-4 py-2 border-b flex items-center justify-between">
-          <span className="text-xs text-gray-500">
+        <div
+          className="px-4 py-2 flex items-center justify-between border-b"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
+          <span className="text-2xs uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>
             {loading ? 'Buscando…' : `${total} cliente${total !== 1 ? 's' : ''}`}
           </span>
           <button
             onClick={() => setShowNewModal(true)}
-            className="text-xs px-2.5 py-1 bg-gray-900 text-white rounded hover:bg-gray-700 transition-colors"
+            className="text-2xs font-medium uppercase tracking-wide px-2.5 py-1 transition-opacity hover:opacity-80"
+            style={{ background: 'var(--brass)', color: '#0C0A09' }}
           >
             + Nuevo
           </button>
@@ -159,7 +177,7 @@ export default function ClientsBoard({ barbers }: Props) {
         {/* Lista */}
         <div className="flex-1 overflow-y-auto">
           {!loading && clients.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-32 text-sm" style={{ color: 'var(--ink-muted)' }}>
               Sin resultados
             </div>
           ) : (
@@ -175,23 +193,34 @@ export default function ClientsBoard({ barbers }: Props) {
                 <button
                   key={client.id}
                   onClick={() => loadProfile(client.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    isSelected ? 'bg-gray-50 border-l-2 border-l-gray-900' : ''
-                  }`}
+                  className="w-full text-left px-4 py-3 border-b transition-colors"
+                  style={{
+                    borderColor: 'var(--border-subtle)',
+                    background: isSelected ? 'var(--surface-3)' : 'transparent',
+                    borderLeft: isSelected ? '2px solid var(--brass)' : '2px solid transparent',
+                  }}
+                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)' }}
+                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-gray-900 truncate">{client.name}</span>
-                    <span className={`flex-shrink-0 px-1.5 py-0.5 rounded-full text-xs font-medium ${CLASSIFICATION_STYLE[client.classification] ?? ''}`}>
+                    <span className="text-sm font-medium truncate" style={{ color: 'var(--ink-primary)' }}>
+                      {client.name}
+                    </span>
+                    <span className={`flex-shrink-0 ${BADGE_CLASS[client.classification] ?? 'badge-new'}`}>
                       {CLASSIFICATION_LABEL[client.classification] ?? client.classification}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <span className="text-xs text-gray-400 truncate">
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-2xs truncate" style={{ color: 'var(--ink-muted)' }}>
                       {client.phone ?? client.email ?? 'Sin contacto'}
                     </span>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-gray-400">{client.loyalty_stamps}★</span>
-                      {lastVisit && <span className="text-xs text-gray-400">{lastVisit}</span>}
+                      <span className="num text-2xs" style={{ color: 'var(--brass-muted)' }}>
+                        {client.loyalty_stamps}★
+                      </span>
+                      {lastVisit && (
+                        <span className="text-2xs" style={{ color: 'var(--ink-muted)' }}>{lastVisit}</span>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -202,14 +231,14 @@ export default function ClientsBoard({ barbers }: Props) {
       </div>
 
       {/* Panel derecho — perfil */}
-      <div className="flex-1 overflow-hidden bg-gray-50">
+      <div className="flex-1 overflow-hidden" style={{ background: 'var(--surface-0)' }}>
         {!selectedId ? (
-          <div className="flex items-center justify-center h-full text-gray-400 flex-col gap-2">
-            <p className="text-lg">Selecciona un cliente</p>
-            <p className="text-sm">El perfil aparecerá aquí</p>
+          <div className="flex items-center justify-center h-full flex-col gap-2" style={{ color: 'var(--ink-muted)' }}>
+            <p className="font-display text-lg" style={{ color: 'var(--ink-secondary)' }}>Selecciona un cliente</p>
+            <p className="text-2xs uppercase tracking-widest">El perfil aparecerá aquí</p>
           </div>
         ) : profileLoading ? (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div className="flex items-center justify-center h-full text-sm" style={{ color: 'var(--ink-muted)' }}>
             Cargando perfil…
           </div>
         ) : profile ? (

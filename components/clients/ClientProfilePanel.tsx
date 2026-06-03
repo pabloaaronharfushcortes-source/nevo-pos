@@ -10,10 +10,11 @@ type Props = {
   onUpdated: (client: Client) => void
 }
 
-const CLASSIFICATION_STYLE: Record<string, string> = {
-  new: 'bg-gray-100 text-gray-600',
-  recurrent: 'bg-blue-100 text-blue-700',
-  vip: 'bg-amber-100 text-amber-700',
+// Clase de badge industrial por clasificación — definida en globals.css
+const BADGE_CLASS: Record<string, string> = {
+  new: 'badge-new',
+  recurrent: 'badge-recurrent',
+  vip: 'badge-vip',
 }
 
 const CLASSIFICATION_LABEL: Record<string, string> = {
@@ -29,13 +30,14 @@ const PAYMENT_LABEL: Record<string, string> = {
   transfer: 'Transferencia',
 }
 
-const STATUS_STYLE: Record<string, string> = {
-  completed: 'text-green-600',
-  paid: 'text-green-600',
-  no_show: 'text-red-500',
-  cancelled: 'text-gray-400',
-  confirmed: 'text-blue-600',
-  pending: 'text-gray-500',
+// Color del estado de cada entrada del historial
+const STATUS_COLOR: Record<string, string> = {
+  completed: '#7FA86B',
+  paid: '#7FA86B',
+  no_show: '#E05252',
+  cancelled: 'var(--ink-muted)',
+  confirmed: 'var(--brass)',
+  pending: 'var(--ink-secondary)',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -55,28 +57,31 @@ function StampsCard({ stamps }: { stamps: number }) {
   const hasReward = stamps > 0 && stamps % STAMPS_GOAL === 0
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+    <div className="p-4" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Tarjeta de lealtad</p>
+        <p className="label-caps">Tarjeta de lealtad</p>
         {cycles > 0 && (
-          <span className="text-xs text-gray-500">{cycles} {cycles === 1 ? 'ciclo' : 'ciclos'} completado{cycles !== 1 ? 's' : ''}</span>
+          <span className="text-2xs" style={{ color: 'var(--brass-muted)' }}>
+            {cycles} {cycles === 1 ? 'ciclo' : 'ciclos'} completado{cycles !== 1 ? 's' : ''}
+          </span>
         )}
       </div>
       <div className="flex gap-1.5 flex-wrap">
         {Array.from({ length: STAMPS_GOAL }).map((_, i) => (
           <div
             key={i}
-            className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-xs transition-colors ${
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs transition-colors"
+            style={
               i < filled
-                ? 'bg-gray-900 border-gray-900 text-white'
-                : 'border-gray-300 text-gray-300'
-            }`}
+                ? { background: 'var(--brass)', border: '2px solid var(--brass)', color: '#0C0A09' }
+                : { border: '2px solid var(--border-strong)', color: 'var(--ink-muted)' }
+            }
           >
             {i < filled ? '✓' : ''}
           </div>
         ))}
       </div>
-      <p className="text-xs text-gray-500 mt-2">
+      <p className="text-2xs mt-3 uppercase tracking-wide" style={{ color: hasReward ? 'var(--brass)' : 'var(--ink-muted)' }}>
         {hasReward
           ? '¡Recompensa disponible! 🎉'
           : `${filled} de ${STAMPS_GOAL} sellos · faltan ${STAMPS_GOAL - filled}`}
@@ -91,22 +96,22 @@ function VisitRow({ entry }: { entry: VisitEntry }) {
   const timeStr = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-      <div className="flex-shrink-0 text-right">
-        <p className="text-xs text-gray-500">{dateStr}</p>
-        <p className="text-xs text-gray-400">{timeStr}</p>
+    <div className="flex items-start gap-3 py-3 border-b last:border-0" style={{ borderColor: 'var(--border-subtle)' }}>
+      <div className="flex-shrink-0 text-right w-16">
+        <p className="num text-2xs" style={{ color: 'var(--ink-secondary)' }}>{dateStr}</p>
+        <p className="num text-2xs" style={{ color: 'var(--ink-muted)' }}>{timeStr}</p>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-900 truncate">{entry.services.join(', ')}</p>
+        <p className="text-sm truncate" style={{ color: 'var(--ink-primary)' }}>{entry.services.join(', ')}</p>
         {entry.barber_name && (
-          <p className="text-xs text-gray-500">{entry.barber_name}</p>
+          <p className="text-2xs" style={{ color: 'var(--ink-muted)' }}>{entry.barber_name}</p>
         )}
       </div>
       <div className="flex-shrink-0 text-right">
         {entry.total !== null && (
-          <p className="text-sm font-medium text-gray-900">${entry.total.toFixed(2)}</p>
+          <p className="num text-sm font-medium" style={{ color: 'var(--ink-primary)' }}>${entry.total.toFixed(2)}</p>
         )}
-        <p className={`text-xs ${STATUS_STYLE[entry.status] ?? 'text-gray-400'}`}>
+        <p className="text-2xs uppercase tracking-wide" style={{ color: STATUS_COLOR[entry.status] ?? 'var(--ink-muted)' }}>
           {entry.type === 'sale' && entry.payment_method
             ? PAYMENT_LABEL[entry.payment_method] ?? entry.payment_method
             : STATUS_LABEL[entry.status] ?? entry.status}
@@ -128,47 +133,53 @@ export default function ClientProfilePanel({ profile, barbers, onUpdated }: Prop
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Header */}
-      <div className="px-6 py-5 border-b bg-white flex-shrink-0">
+      <div
+        className="px-6 py-5 flex-shrink-0 border-b"
+        style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}
+      >
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold text-gray-900">{profile.name}</h2>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLASSIFICATION_STYLE[profile.classification] ?? ''}`}>
+              <h2 className="font-display text-xl font-medium" style={{ color: 'var(--ink-primary)' }}>{profile.name}</h2>
+              <span className={BADGE_CLASS[profile.classification] ?? 'badge-new'}>
                 {CLASSIFICATION_LABEL[profile.classification] ?? profile.classification}
               </span>
             </div>
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
+            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {profile.phone && (
-                <span className="text-sm text-gray-500">{profile.phone}</span>
+                <span className="num text-sm" style={{ color: 'var(--ink-secondary)' }}>{profile.phone}</span>
               )}
               {profile.email && (
-                <span className="text-sm text-gray-500">{profile.email}</span>
+                <span className="text-sm" style={{ color: 'var(--ink-secondary)' }}>{profile.email}</span>
               )}
             </div>
           </div>
           <button
             onClick={() => setShowEdit(true)}
-            className="text-sm px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors flex-shrink-0"
+            className="text-xs uppercase tracking-wide px-3 py-1.5 transition-colors flex-shrink-0"
+            style={{ border: '1px solid var(--border-default)', color: 'var(--ink-secondary)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
           >
             Editar
           </button>
         </div>
       </div>
 
-      <div className="px-6 py-4 space-y-6">
+      <div className="px-6 py-5 space-y-6">
         {/* Stats rápidas */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 text-center">
-            <p className="text-2xl font-bold text-gray-900">{profile.loyalty_stamps}</p>
-            <p className="text-xs text-gray-500 mt-0.5">sellos</p>
+          <div className="p-3 text-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+            <p className="num text-2xl font-medium" style={{ color: 'var(--ink-primary)' }}>{profile.loyalty_stamps}</p>
+            <p className="label-caps mt-1">sellos</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 text-center">
-            <p className="text-2xl font-bold text-gray-900">${profile.total_spent.toFixed(0)}</p>
-            <p className="text-xs text-gray-500 mt-0.5">total gastado</p>
+          <div className="p-3 text-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+            <p className="num text-2xl font-medium" style={{ color: 'var(--brass)' }}>${profile.total_spent.toFixed(0)}</p>
+            <p className="label-caps mt-1">total gastado</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 text-center">
-            <p className="text-sm font-bold text-gray-900 leading-tight mt-1">{lastVisit}</p>
-            <p className="text-xs text-gray-500 mt-0.5">última visita</p>
+          <div className="p-3 text-center flex flex-col justify-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+            <p className="text-sm font-medium leading-tight" style={{ color: 'var(--ink-primary)' }}>{lastVisit}</p>
+            <p className="label-caps mt-1">última visita</p>
           </div>
         </div>
 
@@ -176,39 +187,39 @@ export default function ClientProfilePanel({ profile, barbers, onUpdated }: Prop
         <StampsCard stamps={profile.loyalty_stamps} />
 
         {/* Preferencias */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {profile.preferred_barber && (
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Barbero preferido</p>
-              <p className="text-sm text-gray-900">{profile.preferred_barber.name}</p>
+              <p className="label-caps mb-1">Barbero preferido</p>
+              <p className="text-sm" style={{ color: 'var(--ink-primary)' }}>{profile.preferred_barber.name}</p>
             </div>
           )}
           {profile.whatsapp_id && (
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">WhatsApp ID</p>
-              <p className="text-sm text-gray-900 font-mono">{profile.whatsapp_id}</p>
+              <p className="label-caps mb-1">WhatsApp ID</p>
+              <p className="num text-sm" style={{ color: 'var(--ink-primary)' }}>{profile.whatsapp_id}</p>
             </div>
           )}
           {profile.notes && (
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Notas</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{profile.notes}</p>
+              <p className="label-caps mb-1">Notas</p>
+              <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--ink-secondary)' }}>{profile.notes}</p>
             </div>
           )}
         </div>
 
         {/* Historial */}
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+          <p className="label-caps mb-3">
             Historial de visitas
             {profile.visit_history.length > 0 && (
-              <span className="text-gray-400 normal-case font-normal ml-1">
+              <span className="normal-case ml-1" style={{ color: 'var(--ink-muted)', letterSpacing: 0 }}>
                 ({profile.visit_history.length})
               </span>
             )}
           </p>
           {profile.visit_history.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4 text-center">Sin visitas registradas</p>
+            <p className="text-sm py-4 text-center" style={{ color: 'var(--ink-muted)' }}>Sin visitas registradas</p>
           ) : (
             <div>
               {profile.visit_history.map(entry => (
