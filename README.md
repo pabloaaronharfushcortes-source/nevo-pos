@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NEVO-POS
 
-## Getting Started
+Plataforma SaaS multi-tenant de gestión para negocios basados en citas (barberías, salones,
+consultorios). **Mercurio Barbería** es el tenant 0 — el negocio de producción donde el sistema
+se prueba antes de venderse a otros.
 
-First, run the development server:
+> El documento maestro del proyecto es [`CLAUDE.md`](./CLAUDE.md). Léelo antes de tocar código.
+
+## Stack
+
+Next.js 14 (App Router, TS strict) · Supabase (Postgres + RLS + Realtime + Storage) · Tailwind ·
+Vercel · Meta WhatsApp Cloud API · Claude API (agente) · OpenAI Whisper (audio) · Playwright · k6.
+
+## Desarrollo
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.local.example .env.local   # completar credenciales (ver CLAUDE.md §12)
+npm run dev                         # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Módulos (Fase 1)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Ruta | Módulo |
+|---|---|
+| `/agenda` | Calendario de citas por barbero + CRUD |
+| `/queue` | Cola walk-in + asignación de fichas |
+| `/display` | Pantalla TV pública (Realtime, sin auth) |
+| `/pos` | Punto de venta + comisiones + turno de caja |
+| `/clients` | Registro, perfil, lealtad e historial |
+| `/conversations` | Panel WhatsApp + human handoff |
+| `/api/webhooks/whatsapp` | Agente: webhook + Claude + agenda |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+```bash
+npm run test                   # unit (vitest)
+npm run test:e2e               # E2E (Playwright)
+npm run test:load              # carga del webhook (k6)
+npm run test:tenant-isolation  # aislamiento multi-tenant (RLS)
+npm run seed                   # poblar Mercurio Barbería
+npm run simulate               # simular una semana de operación
+npm run preflight              # verificación de readiness para go-live
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Despliegue
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Procedimiento de migración overnight y checklist de go-live en
+[`docs/go-live.md`](./docs/go-live.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Seguridad
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+RLS en todas las tablas, aislamiento por `tenant_id`, soft delete (`deleted_at`),
+verificación de firma en el webhook de WhatsApp, secretos solo en env. Ver CLAUDE.md §11.
