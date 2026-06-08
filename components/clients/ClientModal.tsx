@@ -20,10 +20,7 @@ type FormState = {
   preferred_barber_id: string
 }
 
-const inputClass = `
-  w-full px-0 py-1.5 text-sm bg-transparent border-0 border-b
-  focus:outline-none focus:ring-0 transition-colors
-`.trim()
+const inputClass = 'w-full rounded-lg border-[1.5px] border-[#EDEDED] bg-[#FAFAFA] px-3 py-2.5 text-sm text-[#0E0D1A] focus:border-[#A259FF] focus:outline-none focus:ring-0 transition-colors'
 
 export default function ClientModal({ barbers, client, onClose, onSaved }: Props) {
   const [form, setForm] = useState<FormState>({
@@ -95,14 +92,14 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
   const isEdit = !!client
 
   return (
-    <div className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center" style={{ background: 'rgba(0,0,0,0.75)' }}>
+    <div className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center" style={{ background: 'rgba(14,13,26,0.40)' }}>
       <div
-        className="w-full md:max-w-md md:mx-4 md:rounded-none rounded-t-lg flex flex-col max-h-[90dvh] overflow-y-auto"
-        style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}
+        className="w-full md:max-w-md md:mx-4 md:rounded-2xl rounded-t-2xl flex flex-col max-h-[90dvh] overflow-y-auto shadow-xl"
+        style={{ background: '#FFFFFF' }}
       >
         {/* Header */}
-        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-          <h2 className="font-display text-lg font-medium" style={{ color: 'var(--ink-primary)' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #EDEDED' }}>
+          <h2 className="font-display text-xl font-semibold" style={{ color: '#0E0D1A' }}>
             {isEdit ? 'Editar cliente' : 'Nuevo cliente'}
           </h2>
           <button
@@ -128,12 +125,6 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
               value={form.name}
               onChange={e => set('name', e.target.value)}
               className={inputClass}
-              style={{
-                borderColor: 'var(--border-default)',
-                color: 'var(--ink-primary)',
-              }}
-              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
-              onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
               placeholder="Nombre completo"
               autoFocus
             />
@@ -148,9 +139,6 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
                 value={form.phone}
                 onChange={e => set('phone', e.target.value)}
                 className={inputClass}
-                style={{ borderColor: 'var(--border-default)', color: 'var(--ink-primary)' }}
-                onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
-                onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
                 placeholder="+521XXXXXXXXXX"
               />
             </div>
@@ -161,9 +149,6 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
                 value={form.email}
                 onChange={e => set('email', e.target.value)}
                 className={inputClass}
-                style={{ borderColor: 'var(--border-default)', color: 'var(--ink-primary)' }}
-                onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
-                onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
                 placeholder="correo@ejemplo.com"
               />
             </div>
@@ -182,9 +167,6 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
               value={form.whatsapp_id}
               onChange={e => set('whatsapp_id', e.target.value)}
               className={`${inputClass} font-mono`}
-              style={{ borderColor: 'var(--border-default)', color: 'var(--ink-primary)' }}
-              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
-              onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
               placeholder="521XXXXXXXXXX"
             />
           </div>
@@ -195,21 +177,12 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
             <select
               value={form.preferred_barber_id}
               onChange={e => set('preferred_barber_id', e.target.value)}
-              className="w-full py-1.5 text-sm border-0 border-b focus:outline-none focus:ring-0 transition-colors bg-transparent"
-              style={{
-                borderColor: 'var(--border-default)',
-                color: form.preferred_barber_id ? 'var(--ink-primary)' : 'var(--ink-muted)',
-              }}
-              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
-              onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
+              className={inputClass}
+              style={{ color: form.preferred_barber_id ? '#0E0D1A' : '#9B9BB0' }}
             >
-              <option value="" style={{ background: 'var(--surface-2)', color: 'var(--ink-secondary)' }}>
-                Sin preferencia
-              </option>
+              <option value="">Sin preferencia</option>
               {barbers.map(b => (
-                <option key={b.id} value={b.id} style={{ background: 'var(--surface-2)', color: 'var(--ink-primary)' }}>
-                  {b.name}
-                </option>
+                <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
           </div>
@@ -221,46 +194,34 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
               value={form.notes}
               onChange={e => set('notes', e.target.value)}
               rows={3}
-              className="w-full px-0 py-1.5 text-sm bg-transparent border-0 border-b focus:outline-none focus:ring-0 resize-none transition-colors"
-              style={{
-                borderColor: 'var(--border-default)',
-                color: 'var(--ink-primary)',
-              }}
-              onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
-              onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
+              className={`${inputClass} resize-none`}
               placeholder="Tipo de cabello, alergias, preferencias…"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 space-y-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+        <div className="px-6 py-4 space-y-3" style={{ borderTop: '1px solid #EDEDED' }}>
           {error && (
-            <p className="text-xs" style={{ color: '#E05252' }}>{error}</p>
+            <p className="text-xs px-3 py-2 rounded-lg" style={{ color: '#E85555', background: '#FFF0F0' }}>{error}</p>
           )}
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-2 text-xs uppercase transition-colors"
-              style={{
-                border: '1px solid var(--border-default)',
-                color: 'var(--ink-secondary)',
-                letterSpacing: '0.08em',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
+              className="flex-1 py-2.5 text-sm font-medium rounded-lg border-[1.5px] transition-colors"
+              style={{ borderColor: '#EDEDED', color: '#6B6B8A' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FAFAFA' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex-1 py-2 text-xs font-medium uppercase transition-opacity disabled:opacity-40"
-              style={{
-                background: 'var(--brass)',
-                color: '#0C0A09',
-                letterSpacing: '0.08em',
-              }}
+              className="flex-1 py-2.5 text-sm font-medium text-white rounded-lg disabled:opacity-50 transition-colors"
+              style={{ background: '#FF6B6B' }}
+              onMouseEnter={e => { if (!submitting) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+              onMouseLeave={e => { if (!submitting) (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
             >
               {submitting ? '…' : isEdit ? 'Guardar' : 'Crear'}
             </button>

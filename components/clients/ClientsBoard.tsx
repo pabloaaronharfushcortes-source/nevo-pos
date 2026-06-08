@@ -45,6 +45,14 @@ const FILTER_OPTIONS = [
   { value: 'vip', label: 'VIP' },
 ]
 
+// Iniciales para el avatar (primer + último nombre)
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
 export default function ClientsBoard({ barbers }: Props) {
   const [search, setSearch] = useState('')
   const [classification, setClassification] = useState('')
@@ -140,23 +148,23 @@ export default function ClientsBoard({ barbers }: Props) {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre o teléfono…"
-            className="w-full px-0 py-1.5 text-sm bg-transparent border-0 border-b focus:outline-none focus:ring-0 transition-colors"
-            style={{ borderColor: 'var(--border-default)', color: 'var(--ink-primary)' }}
-            onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--brass)' }}
-            onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
+            className="w-full px-3 py-2 text-sm rounded-lg border-[1.5px] focus:outline-none transition-colors"
+            style={{ background: '#FAFAFA', borderColor: '#EDEDED', color: '#0E0D1A' }}
+            onFocus={e => { (e.currentTarget as HTMLElement).style.borderColor = '#A259FF' }}
+            onBlur={e => { (e.currentTarget as HTMLElement).style.borderColor = '#EDEDED' }}
           />
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             {FILTER_OPTIONS.map(opt => {
               const active = classification === opt.value
               return (
                 <button
                   key={opt.value}
                   onClick={() => setClassification(opt.value)}
-                  className="px-2.5 py-1 text-2xs font-medium uppercase tracking-wide transition-colors"
+                  className="px-3 py-1 text-xs font-medium rounded-full transition-colors"
                   style={
                     active
-                      ? { background: 'var(--brass)', color: '#0C0A09' }
-                      : { background: 'var(--surface-3)', color: 'var(--ink-secondary)' }
+                      ? { background: '#FF6B6B', color: '#FFFFFF' }
+                      : { background: '#F5F5F7', color: '#6B6B8A' }
                   }
                 >
                   {opt.label}
@@ -171,13 +179,15 @@ export default function ClientsBoard({ barbers }: Props) {
           className="px-4 py-2 flex items-center justify-between border-b"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
-          <span className="text-2xs uppercase tracking-wide" style={{ color: 'var(--ink-muted)' }}>
+          <span className="text-xs" style={{ color: '#9B9BB0' }}>
             {loading ? 'Buscando…' : `${total} cliente${total !== 1 ? 's' : ''}`}
           </span>
           <button
             onClick={() => setShowNewModal(true)}
-            className="text-2xs font-medium uppercase tracking-wide px-2.5 py-1 transition-opacity hover:opacity-80"
-            style={{ background: 'var(--brass)', color: '#0C0A09' }}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg text-white transition-colors"
+            style={{ background: '#FF6B6B' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
           >
             + Nuevo
           </button>
@@ -212,31 +222,41 @@ export default function ClientsBoard({ barbers }: Props) {
                   className="w-full text-left px-4 py-3 border-b transition-colors"
                   style={{
                     borderColor: 'var(--border-subtle)',
-                    background: isSelected ? 'var(--surface-3)' : 'transparent',
-                    borderLeft: isSelected ? '2px solid var(--brass)' : '2px solid transparent',
+                    background: isSelected ? '#FFF6F6' : 'transparent',
+                    borderLeft: isSelected ? '2px solid #FF6B6B' : '2px solid transparent',
                   }}
-                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'var(--surface-2)' }}
+                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#FAFAFA' }}
                   onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium truncate" style={{ color: 'var(--ink-primary)' }}>
-                      {client.name}
-                    </span>
-                    <span className={`flex-shrink-0 ${BADGE_CLASS[client.classification] ?? 'badge-new'}`}>
-                      {CLASSIFICATION_LABEL[client.classification] ?? client.classification}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-2xs truncate" style={{ color: 'var(--ink-muted)' }}>
-                      {client.phone ?? client.email ?? 'Sin contacto'}
-                    </span>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="num text-2xs" style={{ color: 'var(--brass-muted)' }}>
-                        {client.loyalty_stamps}★
-                      </span>
-                      {lastVisit && (
-                        <span className="text-2xs" style={{ color: 'var(--ink-muted)' }}>{lastVisit}</span>
-                      )}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                      style={{ background: '#FFE8E8', color: '#E85555' }}
+                    >
+                      {initials(client.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium truncate" style={{ color: '#0E0D1A' }}>
+                          {client.name}
+                        </span>
+                        <span className={`flex-shrink-0 ${BADGE_CLASS[client.classification] ?? 'badge-new'}`}>
+                          {CLASSIFICATION_LABEL[client.classification] ?? client.classification}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-xs truncate" style={{ color: '#9B9BB0' }}>
+                          {client.phone ?? client.email ?? 'Sin contacto'}
+                        </span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="num text-xs" style={{ color: '#E85555' }}>
+                            {client.loyalty_stamps}★
+                          </span>
+                          {lastVisit && (
+                            <span className="text-xs" style={{ color: '#9B9BB0' }}>{lastVisit}</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </button>

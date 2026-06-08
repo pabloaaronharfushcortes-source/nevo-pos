@@ -20,11 +20,12 @@ export default async function ClientsPage() {
     <div className="flex flex-col h-full" style={{ background: 'var(--surface-0)' }}>
       <div
         className="px-6 py-4 flex-shrink-0 border-b"
-        style={{ borderColor: 'var(--border-subtle)' }}
+        style={{ background: '#FFFFFF', borderColor: '#EDEDED' }}
       >
-        <h1 className="font-display text-xl font-medium" style={{ color: 'var(--ink-primary)' }}>
+        <h1 className="font-display text-2xl font-semibold" style={{ color: '#0E0D1A' }}>
           Clientes
         </h1>
+        <p className="text-sm mt-0.5" style={{ color: '#6B6B8A' }}>Directorio · historial, lealtad y preferencias</p>
       </div>
       <div className="flex-1 min-h-0">
         <ClientsBoard barbers={barbers ?? []} />

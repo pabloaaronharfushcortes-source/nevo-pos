@@ -55,17 +55,25 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STAMPS_GOAL = 10
 
+// Iniciales para el avatar (primer + último nombre)
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
 function StampsCard({ stamps }: { stamps: number }) {
   const filled = Math.min(stamps % STAMPS_GOAL === 0 && stamps > 0 ? STAMPS_GOAL : stamps % STAMPS_GOAL, STAMPS_GOAL)
   const cycles = Math.floor(stamps / STAMPS_GOAL)
   const hasReward = stamps > 0 && stamps % STAMPS_GOAL === 0
 
   return (
-    <div className="p-4" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+    <div className="p-4 rounded-xl" style={{ background: '#FFF6F6', border: '1.5px solid #FFE8E8' }}>
       <div className="flex items-center justify-between mb-3">
         <p className="label-caps">Tarjeta de lealtad</p>
         {cycles > 0 && (
-          <span className="text-2xs" style={{ color: 'var(--brass-muted)' }}>
+          <span className="text-2xs" style={{ color: '#E85555' }}>
             {cycles} {cycles === 1 ? 'ciclo' : 'ciclos'} completado{cycles !== 1 ? 's' : ''}
           </span>
         )}
@@ -77,8 +85,8 @@ function StampsCard({ stamps }: { stamps: number }) {
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs transition-colors"
             style={
               i < filled
-                ? { background: 'var(--brass)', border: '2px solid var(--brass)', color: '#0C0A09' }
-                : { border: '2px solid var(--border-strong)', color: 'var(--ink-muted)' }
+                ? { background: '#FF6B6B', border: '2px solid #FF6B6B', color: '#FFFFFF' }
+                : { border: '2px solid #D4D4E0', color: '#9B9BB0' }
             }
           >
             {i < filled ? '✓' : ''}
@@ -168,38 +176,46 @@ export default function ClientProfilePanel({ profile, barbers, onUpdated, onDele
           </button>
         )}
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-display text-xl font-medium" style={{ color: 'var(--ink-primary)' }}>{profile.name}</h2>
-              <span className={BADGE_CLASS[profile.classification] ?? 'badge-new'}>
-                {CLASSIFICATION_LABEL[profile.classification] ?? profile.classification}
-              </span>
+          <div className="flex items-start gap-3 min-w-0">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center text-base font-semibold flex-shrink-0"
+              style={{ background: '#FFE8E8', color: '#E85555' }}
+            >
+              {initials(profile.name)}
             </div>
-            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-              {profile.phone && (
-                <span className="num text-sm" style={{ color: 'var(--ink-secondary)' }}>{profile.phone}</span>
-              )}
-              {profile.email && (
-                <span className="text-sm" style={{ color: 'var(--ink-secondary)' }}>{profile.email}</span>
-              )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-display text-xl font-medium" style={{ color: 'var(--ink-primary)' }}>{profile.name}</h2>
+                <span className={BADGE_CLASS[profile.classification] ?? 'badge-new'}>
+                  {CLASSIFICATION_LABEL[profile.classification] ?? profile.classification}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                {profile.phone && (
+                  <span className="num text-sm" style={{ color: 'var(--ink-secondary)' }}>{profile.phone}</span>
+                )}
+                {profile.email && (
+                  <span className="text-sm" style={{ color: 'var(--ink-secondary)' }}>{profile.email}</span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setShowEdit(true)}
-              className="text-xs uppercase tracking-wide px-3 py-1.5 transition-colors"
-              style={{ border: '1px solid var(--border-default)', color: 'var(--ink-secondary)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border-[1.5px] transition-colors"
+              style={{ borderColor: '#EDEDED', color: '#6B6B8A' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FAFAFA' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
             >
               Editar
             </button>
             <button
               onClick={() => setConfirmDelete(true)}
               disabled={deleting}
-              className="text-xs uppercase tracking-wide px-3 py-1.5 transition-colors disabled:opacity-40"
-              style={{ border: '1px solid #7f1d1d', color: '#E05252' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(224,82,82,0.08)' }}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border-[1.5px] transition-colors disabled:opacity-40"
+              style={{ borderColor: '#FFD9D9', color: '#E85555' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FFF0F0' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
             >
               Eliminar
@@ -211,15 +227,15 @@ export default function ClientProfilePanel({ profile, barbers, onUpdated, onDele
       <div className="px-6 py-5 space-y-6">
         {/* Stats rápidas */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="p-3 text-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+          <div className="p-3 text-center rounded-xl" style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED' }}>
             <p className="num text-2xl font-medium" style={{ color: 'var(--ink-primary)' }}>{profile.loyalty_stamps}</p>
             <p className="label-caps mt-1">sellos</p>
           </div>
-          <div className="p-3 text-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
-            <p className="num text-2xl font-medium" style={{ color: 'var(--brass)' }}>${profile.total_spent.toFixed(0)}</p>
+          <div className="p-3 text-center rounded-xl" style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED' }}>
+            <p className="num text-2xl font-medium" style={{ color: '#FF6B6B' }}>${profile.total_spent.toFixed(0)}</p>
             <p className="label-caps mt-1">total gastado</p>
           </div>
-          <div className="p-3 text-center flex flex-col justify-center" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+          <div className="p-3 text-center flex flex-col justify-center rounded-xl" style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED' }}>
             <p className="text-sm font-medium leading-tight" style={{ color: 'var(--ink-primary)' }}>{lastVisit}</p>
             <p className="label-caps mt-1">última visita</p>
           </div>
