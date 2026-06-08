@@ -49,13 +49,12 @@ export default function VerifyOtpPage() {
     const res = await fetch('/api/auth/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
+      body: JSON.stringify({ code }),
     })
 
     const data = await res.json() as { status?: string; error?: string; redirect?: string }
 
     if (!res.ok) {
-      // Bloqueo por demasiados intentos: el servidor invalidó la sesión → volver al login
       if (data.redirect) {
         router.push(`${data.redirect}?error=${encodeURIComponent(data.error ?? 'Sesión expirada por intentos fallidos.')}`)
         return
@@ -73,15 +72,24 @@ export default function VerifyOtpPage() {
   const isFull = digits.every(d => d !== '')
 
   return (
-    <div className="w-full max-w-sm bg-white rounded-xl shadow p-8 space-y-6">
+    <div className="w-full max-w-sm">
+      {/* Mobile brand */}
+      <div className="md:hidden text-center mb-8">
+        <p className="font-display text-4xl font-semibold" style={{ color: '#0E0D1A' }}>NEVO</p>
+        <p className="text-sm mt-1" style={{ color: '#A259FF' }}>POS</p>
+      </div>
+
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Verificación</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="font-display text-3xl font-semibold" style={{ color: '#0E0D1A' }}>
+          Verificación
+        </h1>
+        <p className="mt-2 text-sm" style={{ color: '#6B6B8A' }}>
           Ingresa el código de 6 dígitos enviado a tu correo
         </p>
       </div>
 
-      <div className="flex gap-2 justify-center">
+      {/* OTP inputs */}
+      <div className="mt-8 flex gap-2 justify-center">
         {digits.map((digit, i) => (
           <input
             key={i}
@@ -93,31 +101,44 @@ export default function VerifyOtpPage() {
             onChange={e => handleChange(i, e.target.value)}
             onKeyDown={e => handleKeyDown(i, e)}
             onPaste={handlePaste}
-            className="w-11 h-12 text-center text-xl font-semibold rounded-md border border-gray-300
-                       shadow-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+            className="w-12 h-14 text-center text-2xl font-semibold bg-[#FAFAFA] border-[1.5px] border-[#EDEDED] focus:border-[#A259FF] focus:outline-none transition-colors"
+            style={{ borderRadius: '10px', color: '#0E0D1A' }}
           />
         ))}
       </div>
 
-      {error !== null && (
-        <p className="text-sm text-red-600 text-center">{error}</p>
+      {error && (
+        <p className="mt-4 text-sm text-center px-3 py-2 rounded" style={{ background: '#FFF0F0', color: '#E85555' }}>
+          {error}
+        </p>
       )}
 
-      <button
-        onClick={handleSubmit}
-        disabled={loading || !isFull}
-        className="w-full rounded-md bg-gray-900 px-4 py-2.5 text-sm font-medium text-white
-                   hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {loading ? 'Verificando…' : 'Confirmar'}
-      </button>
+      <div className="mt-6 space-y-3">
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !isFull}
+          className="w-full py-3 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: '#FF6B6B', borderRadius: '8px' }}
+          onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+          onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
+        >
+          {loading ? 'Verificando…' : 'Confirmar'}
+        </button>
 
-      <button
-        onClick={() => router.push('/login')}
-        className="w-full text-sm text-gray-500 hover:text-gray-700 transition-colors"
-      >
-        Volver al inicio de sesión
-      </button>
+        <button
+          onClick={() => router.push('/login')}
+          className="w-full py-2.5 text-sm font-medium transition-colors"
+          style={{ color: '#6B6B8A' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#A259FF' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B6B8A' }}
+        >
+          Volver al inicio de sesión
+        </button>
+      </div>
+
+      <p className="mt-10 text-center text-xs" style={{ color: '#9B9BB0' }}>
+        Powered by NEVO
+      </p>
     </div>
   )
 }

@@ -1,38 +1,30 @@
 import type { Metadata } from "next"
-import { Cormorant_Garamond, DM_Sans, IBM_Plex_Mono } from "next/font/google"
+import { Inter, Playfair_Display } from "next/font/google"
 import "./globals.css"
 
-const cormorant = Cormorant_Garamond({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-cormorant",
+  variable: "--font-inter",
   display: "swap",
 })
 
-const dmSans = DM_Sans({
+const playfair = Playfair_Display({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--font-dm-sans",
-  display: "swap",
-})
-
-const ibmMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-ibm-mono",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-playfair",
   display: "swap",
 })
 
 export const metadata: Metadata = {
-  title: "NEVO-POS",
-  description: "Sistema de gestión para barberías premium",
+  title: "NEVO POS",
+  description: "AI-Powered Marketing. Human-Level Results.",
 }
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${cormorant.variable} ${dmSans.variable} ${ibmMono.variable}`}>
+    <html lang="es" className={`${inter.variable} ${playfair.variable}`}>
       <body className="antialiased">
         {children}
       </body>

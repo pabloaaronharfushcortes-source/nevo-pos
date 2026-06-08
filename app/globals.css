@@ -2,7 +2,131 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Microinteracciones: animaciones de entrada (modales, toasts, drawers) ─── */
+/* ─── Fuentes NEVO ─────────────────────────────────────────────────────────── */
+:root {
+  --font-display: var(--font-playfair);
+  --font-body:    var(--font-inter);
+}
+
+/* ─── Tokens NEVO ──────────────────────────────────────────────────────────── */
+:root {
+  /* Fondos */
+  --bg-primary:     #FFFFFF;
+  --bg-secondary:   #FFF0F0;
+  --bg-tertiary:    #F5EEFF;
+  --bg-card:        #FFFFFF;
+  --bg-input:       #FAFAFA;
+
+  /* Texto */
+  --text-primary:   #0E0D1A;
+  --text-secondary: #6B6B8A;
+  --text-inverse:   #FFFFFF;
+
+  /* Acentos */
+  --accent-primary:        #FF6B6B;
+  --accent-primary-dark:   #E85555;
+  --accent-primary-soft:   #FFE8E8;
+  --accent-secondary:      #A259FF;
+  --accent-secondary-dark: #8B3FFF;
+  --accent-secondary-soft: #F0E6FF;
+
+  /* Bordes */
+  --border:      #EDEDED;
+  --border-dark: #D4D4E0;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 3px rgba(14,13,26,0.06);
+  --shadow-md: 0 4px 12px rgba(14,13,26,0.08);
+  --shadow-lg: 0 8px 24px rgba(14,13,26,0.10);
+
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* ─── Alias legacy → NEVO (inline-styles de componentes existentes) ─── */
+  --background: #FFFFFF;
+  --foreground: #0E0D1A;
+
+  /* Surfaces */
+  --surface-0: #FFFFFF;
+  --surface-1: #FAFAFA;
+  --surface-2: #FFFFFF;
+  --surface-3: #F5EEFF;
+
+  /* Borders */
+  --border-subtle:  #F0F0F5;
+  --border-default: #EDEDED;
+  --border-strong:  #D4D4E0;
+
+  /* Text */
+  --ink-primary:   #0E0D1A;
+  --ink-secondary: #6B6B8A;
+  --ink-muted:     #9B9BB0;
+
+  /* Brass → Coral (primary accent alias) */
+  --brass:       #FF6B6B;
+  --brass-dark:  #FFE8E8;
+  --brass-muted: #E85555;
+}
+
+/* ─── Base ─────────────────────────────────────────────────────────────────── */
+html {
+  background-color: #FFFFFF;
+  color: #0E0D1A;
+}
+
+body {
+  font-family: var(--font-inter, system-ui, sans-serif);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #FFFFFF;
+  color: #0E0D1A;
+}
+
+h1, h2 {
+  font-family: var(--font-playfair, Georgia, serif);
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+/* ─── Focus ─────────────────────────────────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid var(--accent-secondary);
+  outline-offset: 2px;
+}
+
+/* ─── Inputs — estilo NEVO ──────────────────────────────────────────────────── */
+input, textarea, select {
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+/* ─── Botones — microinteracciones ──────────────────────────────────────────── */
+button, [role="button"] {
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+button:active:not(:disabled), [role="button"]:active:not([aria-disabled="true"]) {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  transition: color 150ms ease-out, opacity 150ms ease-out;
+}
+
+/* ─── Animaciones ────────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -24,128 +148,61 @@
   to   { transform: translateX(0); }
 }
 
-/* ─── Design system: Industrial / Luxury ─── */
-:root {
-  --background: #0C0A09;
-  --foreground: #E8E4DF;
+.drawer-enter { animation: drawerIn 200ms ease-out; }
 
-  /* Surfaces */
-  --surface-0: #0C0A09;   /* base */
-  --surface-1: #161412;   /* panels */
-  --surface-2: #1E1B18;   /* cards */
-  --surface-3: #272320;   /* elevated */
-
-  /* Borders */
-  --border-subtle: #252220;
-  --border-default: #302C28;
-  --border-strong: #44403C;
-
-  /* Text */
-  --ink-primary: #E8E4DF;
-  --ink-secondary: #8A857E;
-  --ink-muted: #504C48;
-
-  /* Brass accent */
-  --brass: #C9A96E;
-  --brass-dark: #3D2E13;
-  --brass-muted: #6B5530;
-}
-
-html {
-  background-color: var(--surface-0);
-  color: var(--ink-primary);
-}
-
-body {
-  font-family: var(--font-dm-sans, system-ui, sans-serif);
-  font-size: 14px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--surface-0);
-  color: var(--ink-primary);
-}
-
-/* ─── Scrollbar ─── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
-
-/* ─── Focus global ─── */
-*:focus-visible {
-  outline: 1px solid var(--brass);
-  outline-offset: 1px;
-}
-
-/* ─── Microinteracciones: botones ─── */
-/* Transición base de 150ms en todos los botones */
-button, [role="button"] {
-  transition-property: color, background-color, border-color, opacity, transform;
-  transition-duration: 150ms;
-  transition-timing-function: ease-out;
-}
-
-/* Estado active — feedback táctil inmediato */
-button:active:not(:disabled), [role="button"]:active:not([aria-disabled="true"]) {
-  transform: scale(0.97);
-  opacity: 0.85;
-}
-
-/* Los botones con spin (loading) no aplican transform */
-button:disabled {
-  cursor: not-allowed;
-}
-
-/* ─── Microinteracciones: links de nav ─── */
-a {
-  transition: color 150ms ease-out, opacity 150ms ease-out;
-}
-
-/* ─── Microinteracciones: inputs ─── */
-input, textarea, select {
-  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
-}
-
-/* ─── Animación de entrada para el drawer mobile ─── */
-.drawer-enter {
-  animation: drawerIn 200ms ease-out;
-}
-
-/* ─── Animación slide-up para bottom sheets en mobile ─── */
 @media (max-width: 767px) {
-  [role="dialog"] {
-    animation: slideUp 200ms ease-out;
-  }
+  [role="dialog"] { animation: slideUp 200ms ease-out; }
 }
 
-/* ─── Utilities de diseño ─── */
+/* ─── Utilidades NEVO ────────────────────────────────────────────────────────── */
 @layer utilities {
   .text-balance { text-wrap: balance; }
 
-  /* Etiqueta industrial: mayúsculas, tracking */
   .label-caps {
-    @apply text-2xs font-medium uppercase tracking-widest text-stone-500;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-secondary);
   }
 
-  /* Número con fuente mono */
   .num {
-    @apply font-mono tabular-nums;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
   }
 
-  /* Divider hairline */
   .hairline {
-    @apply border-t border-stone-800/60;
+    border-top: 1px solid var(--border);
   }
 
-  /* Badge de clasificación */
   .badge-new {
-    @apply bg-stone-800 text-stone-400 text-2xs font-medium uppercase tracking-wide px-1.5 py-0.5;
+    background: #F5F5F5;
+    color: #6B6B8A;
+    font-size: 0.625rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 10px;
+    border-radius: 20px;
   }
   .badge-recurrent {
-    @apply bg-stone-800 text-brass text-2xs font-medium uppercase tracking-wide px-1.5 py-0.5;
+    background: #F0E6FF;
+    color: #8B3FFF;
+    font-size: 0.625rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 10px;
+    border-radius: 20px;
   }
   .badge-vip {
-    @apply bg-brass text-stone-950 text-2xs font-bold uppercase tracking-wide px-1.5 py-0.5;
+    background: #FFE8E8;
+    color: #E85555;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 10px;
+    border-radius: 20px;
   }
 }
