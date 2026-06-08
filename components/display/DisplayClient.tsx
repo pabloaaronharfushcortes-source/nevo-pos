@@ -83,7 +83,7 @@ export default function DisplayClient({
     .sort((a, b) => a.ticket_number - b.ticket_number)
 
   return (
-    <div className="flex h-screen bg-gray-950 overflow-hidden select-none">
+    <div className="flex h-screen overflow-hidden select-none" style={{ background: '#0E0D1A' }}>
       {/* Video — 2/3 */}
       <div className="w-2/3 relative bg-black flex-shrink-0">
         {videoUrls.length > 0 ? (
@@ -100,21 +100,24 @@ export default function DisplayClient({
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-2">
-              <p className="text-7xl font-black text-white opacity-10 tracking-tight uppercase">
+              <p className="font-display text-7xl font-bold tracking-tight" style={{ color: 'rgba(255,107,107,0.18)' }}>
                 {tenantName}
               </p>
-              <p className="text-lg text-white opacity-5 uppercase tracking-widest">Bienvenido</p>
+              <p className="text-lg uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.06)' }}>Bienvenido</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Panel de cola — 1/3 */}
-      <div className="w-1/3 flex flex-col border-l border-gray-800 min-w-0">
+      <div className="w-1/3 flex flex-col min-w-0" style={{ borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-800 flex items-center justify-between">
+        <div
+          className="px-6 py-5 flex items-center justify-between"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">En espera</p>
+            <p className="text-xs uppercase tracking-wider font-medium" style={{ color: '#9B9BB0' }}>En espera</p>
             <p className="text-2xl font-bold text-white mt-0.5">{activeTickets.length} turnos</p>
           </div>
           <Clock />
@@ -124,7 +127,7 @@ export default function DisplayClient({
         <div className="flex-1 overflow-y-auto">
           {activeTickets.length === 0 ? (
             <div className="flex items-center justify-center h-48">
-              <p className="text-gray-600 text-sm">Sin turnos en espera</p>
+              <p className="text-sm" style={{ color: '#6B6B8A' }}>Sin turnos en espera</p>
             </div>
           ) : (
             activeTickets.map(ticket => {
@@ -132,27 +135,31 @@ export default function DisplayClient({
               return (
                 <div
                   key={ticket.id}
-                  className={`flex items-center gap-5 px-6 py-5 border-b transition-colors ${
-                    isCalled
-                      ? 'bg-amber-500/10 border-amber-500/20'
-                      : 'border-gray-800'
-                  }`}
+                  className="flex items-center gap-5 px-6 py-5 transition-colors"
+                  style={{
+                    background: isCalled ? 'rgba(255,107,107,0.12)' : 'transparent',
+                    borderBottom: isCalled
+                      ? '1px solid rgba(255,107,107,0.30)'
+                      : '1px solid rgba(255,255,255,0.08)',
+                  }}
                 >
-                  <span className={`text-5xl font-black tabular-nums w-16 text-center leading-none ${
-                    isCalled ? 'text-amber-400' : 'text-white'
-                  }`}>
+                  <span
+                    className="text-5xl font-black tabular-nums w-16 text-center leading-none"
+                    style={{ color: '#FF6B6B' }}
+                  >
                     {String(ticket.ticket_number).padStart(2, '0')}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-lg font-semibold truncate ${
-                      isCalled ? 'text-amber-300' : 'text-white'
-                    }`}>
+                    <p className="text-lg font-semibold truncate text-white">
                       {ticket.client_first_name}
                     </p>
-                    <p className="text-sm text-gray-400 truncate">{ticket.barber_name}</p>
+                    <p className="text-sm truncate" style={{ color: '#9B9BB0' }}>{ticket.barber_name}</p>
                   </div>
                   {isCalled && (
-                    <span className="flex-shrink-0 text-xs font-bold text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded animate-pulse">
+                    <span
+                      className="flex-shrink-0 text-xs font-bold text-white px-2.5 py-1 rounded-full animate-pulse"
+                      style={{ background: '#FF6B6B' }}
+                    >
                       LLAMADO
                     </span>
                   )}
@@ -163,8 +170,8 @@ export default function DisplayClient({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-800">
-          <p className="text-xs text-gray-600 uppercase tracking-wider">{tenantName}</p>
+        <div className="px-6 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <p className="text-xs uppercase tracking-wider" style={{ color: '#6B6B8A' }}>{tenantName}</p>
         </div>
       </div>
     </div>

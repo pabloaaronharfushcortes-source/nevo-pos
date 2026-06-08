@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // Ventas del periodo (RLS filtra por tenant). Soft delete excluido.
     const { data: sales, error: salesError } = await supabase
       .from('sales')
-      .select('id, total, subtotal, discount, payment_method, barber_id, created_at, barber:barbers(id, name)')
+      .select('id, total, subtotal, discount, tip, payment_method, barber_id, created_at, barber:barbers(id, name)')
       .gte('created_at', fromIso)
       .lte('created_at', toIso)
       .is('deleted_at', null)
@@ -36,13 +36,17 @@ export async function GET(request: NextRequest) {
 
     const rows = sales ?? []
 
-    // Totales generales
-    const totalRevenue = rows.reduce((acc, s) => acc + Number(s.total), 0)
+    // Totales generales.
+    // La propina se cobra junto con la venta pero NO es ingreso del negocio:
+    // va 100% al barbero. Se separa del ingreso por servicios.
+    const totalCollected = rows.reduce((acc, s) => acc + Number(s.total), 0)
+    const totalTips = rows.reduce((acc, s) => acc + Number(s.tip), 0)
     const totalDiscount = rows.reduce((acc, s) => acc + Number(s.discount), 0)
+    const serviceRevenue = totalCollected - totalTips
     const saleCount = rows.length
-    const averageTicket = saleCount > 0 ? totalRevenue / saleCount : 0
+    const averageTicket = saleCount > 0 ? serviceRevenue / saleCount : 0
 
-    // Desglose por método de pago
+    // Desglose por método de pago (sobre el total cobrado, incluye propina)
     const byPaymentMethod: Record<string, { count: number; total: number }> = {}
     for (const s of rows) {
       const key = s.payment_method
@@ -62,16 +66,18 @@ export async function GET(request: NextRequest) {
 
     const byBarber: Record<
       string,
-      { barberId: string; name: string; salesTotal: number; salesCount: number; commission: number }
+      { barberId: string; name: string; salesTotal: number; tips: number; salesCount: number; commission: number }
     > = {}
 
     for (const s of rows) {
       const b = (s.barber as { id: string; name: string } | null)
       const id = s.barber_id
       if (!byBarber[id]) {
-        byBarber[id] = { barberId: id, name: b?.name ?? '—', salesTotal: 0, salesCount: 0, commission: 0 }
+        byBarber[id] = { barberId: id, name: b?.name ?? '—', salesTotal: 0, tips: 0, salesCount: 0, commission: 0 }
       }
-      byBarber[id].salesTotal += Number(s.total)
+      // Ingreso por servicios (sin propina) — base de la comisión
+      byBarber[id].salesTotal += Number(s.total) - Number(s.tip)
+      byBarber[id].tips += Number(s.tip)
       byBarber[id].salesCount += 1
     }
 
@@ -79,7 +85,7 @@ export async function GET(request: NextRequest) {
       const b = (c.barber as { id: string; name: string } | null)
       const id = c.barber_id
       if (!byBarber[id]) {
-        byBarber[id] = { barberId: id, name: b?.name ?? '—', salesTotal: 0, salesCount: 0, commission: 0 }
+        byBarber[id] = { barberId: id, name: b?.name ?? '—', salesTotal: 0, tips: 0, salesCount: 0, commission: 0 }
       }
       byBarber[id].commission += Number(c.amount)
     }
@@ -89,12 +95,14 @@ export async function GET(request: NextRequest) {
     return ok({
       period: { from, to },
       summary: {
-        totalRevenue,
+        serviceRevenue,
+        totalTips,
+        totalCollected,
         totalDiscount,
         saleCount,
         averageTicket,
         totalCommissions,
-        netRevenue: totalRevenue - totalCommissions,
+        netRevenue: serviceRevenue - totalCommissions,
       },
       byPaymentMethod,
       byBarber: Object.values(byBarber).sort((a, b) => b.salesTotal - a.salesTotal),

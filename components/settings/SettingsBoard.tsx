@@ -49,11 +49,8 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'business', label: 'Negocio' },
 ]
 
-const fieldStyle = {
-  background: 'var(--surface-0)',
-  border: '1px solid var(--border-default)',
-  color: 'var(--ink-primary)',
-}
+const inputClass =
+  'w-full rounded-lg border-[1.5px] border-[#EDEDED] bg-[#FAFAFA] px-3 py-2.5 text-sm text-[#0E0D1A] focus:border-[#A259FF] focus:outline-none focus:ring-0 transition-colors'
 
 export default function SettingsBoard() {
   const [tab, setTab] = useState<Tab>('services')
@@ -62,9 +59,9 @@ export default function SettingsBoard() {
     <div className="flex flex-col h-full">
       <div
         className="px-4 md:px-6 py-3 border-b flex items-center gap-2 flex-wrap flex-shrink-0"
-        style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}
+        style={{ background: '#FFFFFF', borderColor: '#EDEDED' }}
       >
-        <h1 className="font-display text-lg font-medium mr-2" style={{ color: 'var(--ink-primary)' }}>
+        <h1 className="font-display text-2xl font-semibold mr-2" style={{ color: '#0E0D1A' }}>
           Configuración
         </h1>
         {TABS.map(t => {
@@ -73,11 +70,11 @@ export default function SettingsBoard() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className="px-3 py-1 text-2xs font-medium uppercase tracking-wide transition-colors"
+              className="px-3 py-1 text-xs font-medium rounded-full transition-colors"
               style={
                 active
-                  ? { background: 'var(--brass)', color: '#0C0A09' }
-                  : { background: 'var(--surface-3)', color: 'var(--ink-secondary)' }
+                  ? { background: '#FF6B6B', color: '#FFFFFF' }
+                  : { background: '#F5F5F7', color: '#6B6B8A' }
               }
             >
               {t.label}
@@ -170,33 +167,37 @@ function ServicesTab() {
         <p className="label-caps">Servicios del catálogo</p>
         <button
           onClick={() => setAdding(v => !v)}
-          className="flex items-center gap-1 px-3 py-1.5 text-2xs font-medium uppercase tracking-wide"
-          style={{ background: 'var(--surface-3)', color: 'var(--ink-secondary)' }}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white transition-colors"
+          style={{ background: '#FF6B6B' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
         >
           <Plus size={13} /> Nuevo
         </button>
       </div>
 
       {adding && (
-        <div className="p-3 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+        <div className="p-3 space-y-2 rounded-xl" style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED' }}>
           <input
             value={name} onChange={e => setName(e.target.value)} placeholder="Nombre del servicio"
-            className="w-full px-3 py-2 text-sm" style={fieldStyle}
+            className={inputClass}
           />
           <div className="flex gap-2">
             <input
               value={price} onChange={e => setPrice(e.target.value)} placeholder="Precio (MXN)" inputMode="numeric"
-              className="w-full px-3 py-2 text-sm" style={fieldStyle}
+              className={inputClass}
             />
             <input
               value={duration} onChange={e => setDuration(e.target.value)} placeholder="Minutos" inputMode="numeric"
-              className="w-full px-3 py-2 text-sm" style={fieldStyle}
+              className={inputClass}
             />
           </div>
           <button
             onClick={create} disabled={saving}
-            className="px-4 py-2 text-2xs font-medium uppercase tracking-wide disabled:opacity-50"
-            style={{ background: 'var(--brass)', color: '#0C0A09' }}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white transition-colors disabled:opacity-50"
+            style={{ background: '#FF6B6B' }}
+            onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
           >
             {saving ? 'Guardando…' : 'Guardar servicio'}
           </button>
@@ -207,19 +208,19 @@ function ServicesTab() {
         {items.map(s => (
           <div
             key={s.id}
-            className="flex items-center justify-between p-3"
-            style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)', opacity: s.is_active ? 1 : 0.5 }}
+            className="flex items-center justify-between p-3 rounded-xl"
+            style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED', opacity: s.is_active ? 1 : 0.5 }}
           >
             <div>
-              <span className="text-sm" style={{ color: 'var(--ink-primary)' }}>{s.name}</span>
-              <span className="num text-2xs ml-2" style={{ color: 'var(--ink-muted)' }}>{s.duration_minutes} min</span>
+              <span className="text-sm" style={{ color: '#0E0D1A' }}>{s.name}</span>
+              <span className="num text-2xs ml-2" style={{ color: '#9B9BB0' }}>{s.duration_minutes} min</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="num text-sm font-medium" style={{ color: 'var(--ink-primary)' }}>{MXN(s.price)}</span>
+              <span className="num text-sm font-medium" style={{ color: '#0E0D1A' }}>{MXN(s.price)}</span>
               <button
                 onClick={() => toggleActive(s)}
-                className="flex items-center justify-center w-7 h-7"
-                style={{ background: 'var(--surface-3)', color: s.is_active ? 'var(--brass)' : 'var(--ink-muted)' }}
+                className="flex items-center justify-center w-7 h-7 rounded-lg"
+                style={{ background: '#FFFFFF', border: '1.5px solid #EDEDED', color: s.is_active ? '#FF6B6B' : '#9B9BB0' }}
                 aria-label={s.is_active ? 'Desactivar' : 'Activar'}
               >
                 {s.is_active ? <Check size={14} /> : <X size={14} />}
@@ -303,27 +304,31 @@ function BarbersTab() {
         <p className="label-caps">Equipo de barberos</p>
         <button
           onClick={() => setAdding(v => !v)}
-          className="flex items-center gap-1 px-3 py-1.5 text-2xs font-medium uppercase tracking-wide"
-          style={{ background: 'var(--surface-3)', color: 'var(--ink-secondary)' }}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white transition-colors"
+          style={{ background: '#FF6B6B' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
         >
           <Plus size={13} /> Nuevo
         </button>
       </div>
 
       {adding && (
-        <div className="p-3 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+        <div className="p-3 space-y-2 rounded-xl" style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED' }}>
           <input
             value={name} onChange={e => setName(e.target.value)} placeholder="Nombre del barbero"
-            className="w-full px-3 py-2 text-sm" style={fieldStyle}
+            className={inputClass}
           />
           <input
             value={rate} onChange={e => setRate(e.target.value)} placeholder="Comisión % (ej. 40)" inputMode="numeric"
-            className="w-full px-3 py-2 text-sm" style={fieldStyle}
+            className={inputClass}
           />
           <button
             onClick={create} disabled={saving}
-            className="px-4 py-2 text-2xs font-medium uppercase tracking-wide disabled:opacity-50"
-            style={{ background: 'var(--brass)', color: '#0C0A09' }}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white transition-colors disabled:opacity-50"
+            style={{ background: '#FF6B6B' }}
+            onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
           >
             {saving ? 'Guardando…' : 'Guardar barbero'}
           </button>
@@ -334,16 +339,16 @@ function BarbersTab() {
         {items.map(b => (
           <div
             key={b.id}
-            className="flex items-center justify-between p-3"
-            style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)', opacity: b.is_active ? 1 : 0.5 }}
+            className="flex items-center justify-between p-3 rounded-xl"
+            style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED', opacity: b.is_active ? 1 : 0.5 }}
           >
-            <span className="text-sm" style={{ color: 'var(--ink-primary)' }}>{b.name}</span>
+            <span className="text-sm" style={{ color: '#0E0D1A' }}>{b.name}</span>
             <div className="flex items-center gap-3">
-              <span className="num text-2xs" style={{ color: 'var(--brass)' }}>{b.commission_rate}% comisión</span>
+              <span className="num text-2xs" style={{ color: '#FF6B6B' }}>{b.commission_rate}% comisión</span>
               <button
                 onClick={() => toggleActive(b)}
-                className="flex items-center justify-center w-7 h-7"
-                style={{ background: 'var(--surface-3)', color: b.is_active ? 'var(--brass)' : 'var(--ink-muted)' }}
+                className="flex items-center justify-center w-7 h-7 rounded-lg"
+                style={{ background: '#FFFFFF', border: '1.5px solid #EDEDED', color: b.is_active ? '#FF6B6B' : '#9B9BB0' }}
                 aria-label={b.is_active ? 'Desactivar' : 'Activar'}
               >
                 {b.is_active ? <Check size={14} /> : <X size={14} />}
@@ -414,48 +419,50 @@ function BusinessTab() {
 
       <Field label="Nombre">
         <input value={tenant.name} onChange={e => set({ name: e.target.value })}
-          className="w-full px-3 py-2 text-sm" style={fieldStyle} />
+          className={inputClass} />
       </Field>
       <Field label="Dirección">
         <input value={tenant.address ?? ''} onChange={e => set({ address: e.target.value })}
-          className="w-full px-3 py-2 text-sm" style={fieldStyle} />
+          className={inputClass} />
       </Field>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Teléfono">
           <input value={tenant.phone ?? ''} onChange={e => set({ phone: e.target.value })}
-            className="w-full px-3 py-2 text-sm" style={fieldStyle} />
+            className={inputClass} />
         </Field>
         <Field label="Email">
           <input value={tenant.email ?? ''} onChange={e => set({ email: e.target.value })}
-            className="w-full px-3 py-2 text-sm" style={fieldStyle} />
+            className={inputClass} />
         </Field>
       </div>
       <Field label="Sitio web">
         <input value={tenant.website ?? ''} onChange={e => set({ website: e.target.value })}
-          className="w-full px-3 py-2 text-sm" style={fieldStyle} />
+          className={inputClass} />
       </Field>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Tolerancia de retraso (min)">
           <input value={tenant.late_tolerance_minutes} inputMode="numeric"
             onChange={e => set({ late_tolerance_minutes: Number(e.target.value) || 0 })}
-            className="w-full px-3 py-2 text-sm num" style={fieldStyle} />
+            className={`${inputClass} num`} />
         </Field>
         <Field label="Buffer entre citas (min)">
           <input value={tenant.appointment_buffer_minutes} inputMode="numeric"
             onChange={e => set({ appointment_buffer_minutes: Number(e.target.value) || 0 })}
-            className="w-full px-3 py-2 text-sm num" style={fieldStyle} />
+            className={`${inputClass} num`} />
         </Field>
       </div>
       <Field label="Base de conocimiento del agente (WhatsApp)">
         <textarea value={tenant.agent_knowledge_base ?? ''} rows={8}
           onChange={e => set({ agent_knowledge_base: e.target.value })}
-          className="w-full px-3 py-2 text-sm font-mono" style={fieldStyle} />
+          className={`${inputClass} font-mono resize-none`} />
       </Field>
 
       <button
         onClick={save} disabled={saving}
-        className="px-4 py-2 text-2xs font-medium uppercase tracking-wide disabled:opacity-50"
-        style={{ background: 'var(--brass)', color: '#0C0A09' }}
+        className="px-4 py-2 text-sm font-medium rounded-lg text-white transition-colors disabled:opacity-50"
+        style={{ background: '#FF6B6B' }}
+        onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
       >
         {saving ? 'Guardando…' : 'Guardar cambios'}
       </button>

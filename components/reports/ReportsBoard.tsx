@@ -11,6 +11,7 @@ type BarberRow = {
   barberId: string
   name: string
   salesTotal: number
+  tips: number
   salesCount: number
   commission: number
 }
@@ -18,7 +19,9 @@ type BarberRow = {
 type ReportData = {
   period: { from: string; to: string }
   summary: {
-    totalRevenue: number
+    serviceRevenue: number
+    totalTips: number
+    totalCollected: number
     totalDiscount: number
     saleCount: number
     averageTicket: number
@@ -27,6 +30,11 @@ type ReportData = {
   }
   byPaymentMethod: PaymentBreakdown
   byBarber: BarberRow[]
+}
+
+// Escapa una celda CSV si contiene comas, comillas o saltos de línea
+function csvCell(value: string): string {
+  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
 }
 
 const PAYMENT_LABEL: Record<string, string> = {
@@ -75,8 +83,8 @@ const PRESETS: { key: 'today' | 'week' | 'quincena' | 'month'; label: string }[]
 
 function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="p-4" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
-      <p className="num text-2xl font-medium" style={{ color: accent ? 'var(--brass)' : 'var(--ink-primary)' }}>
+    <div className="p-4 rounded-xl" style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED' }}>
+      <p className="num text-2xl font-medium" style={{ color: accent ? '#FF6B6B' : '#0E0D1A' }}>
         {value}
       </p>
       <p className="label-caps mt-1">{label}</p>
@@ -116,14 +124,49 @@ export default function ReportsBoard() {
     setRange(rangeForPreset(key))
   }
 
+  // Exporta el reporte actual a CSV (descarga local, sin servidor)
+  function exportCsv() {
+    if (!data) return
+    const lines: string[] = []
+    lines.push(`Reporte,${range.from} a ${range.to}`)
+    lines.push('')
+    lines.push('Resumen,Valor')
+    lines.push(`Ingresos por servicios,${data.summary.serviceRevenue.toFixed(2)}`)
+    lines.push(`Propinas,${data.summary.totalTips.toFixed(2)}`)
+    lines.push(`Total cobrado,${data.summary.totalCollected.toFixed(2)}`)
+    lines.push(`Descuentos,${data.summary.totalDiscount.toFixed(2)}`)
+    lines.push(`Ventas,${data.summary.saleCount}`)
+    lines.push(`Ticket promedio,${data.summary.averageTicket.toFixed(2)}`)
+    lines.push(`Comisiones,${data.summary.totalCommissions.toFixed(2)}`)
+    lines.push(`Neto,${data.summary.netRevenue.toFixed(2)}`)
+    lines.push('')
+    lines.push('Barbero,Ventas,Ingresos,Propinas,Comision')
+    for (const b of data.byBarber) {
+      lines.push(`${csvCell(b.name)},${b.salesCount},${b.salesTotal.toFixed(2)},${b.tips.toFixed(2)},${b.commission.toFixed(2)}`)
+    }
+    lines.push('')
+    lines.push('Metodo de pago,Ventas,Total')
+    for (const [method, info] of Object.entries(data.byPaymentMethod)) {
+      lines.push(`${csvCell(PAYMENT_LABEL[method] ?? method)},${info.count},${info.total.toFixed(2)}`)
+    }
+    // BOM para que Excel reconozca UTF-8 (acentos)
+    const blob = new Blob([`﻿${lines.join('\n')}`], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `reporte-${range.from}-a-${range.to}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header con presets de periodo */}
       <div
         className="px-4 md:px-6 py-3 border-b flex items-center gap-2 flex-wrap flex-shrink-0"
-        style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}
+        style={{ background: '#FFFFFF', borderColor: '#EDEDED' }}
       >
-        <h1 className="font-display text-lg font-medium mr-2" style={{ color: 'var(--ink-primary)' }}>
+        <h1 className="font-display text-2xl font-semibold mr-2" style={{ color: '#0E0D1A' }}>
           Reportes
         </h1>
         {PRESETS.map(p => {
@@ -132,20 +175,32 @@ export default function ReportsBoard() {
             <button
               key={p.key}
               onClick={() => applyPreset(p.key)}
-              className="px-3 py-1 text-2xs font-medium uppercase tracking-wide transition-colors"
+              className="px-3 py-1 text-xs font-medium rounded-full transition-colors"
               style={
                 active
-                  ? { background: 'var(--brass)', color: '#0C0A09' }
-                  : { background: 'var(--surface-3)', color: 'var(--ink-secondary)' }
+                  ? { background: '#FF6B6B', color: '#FFFFFF' }
+                  : { background: '#F5F5F7', color: '#6B6B8A' }
               }
             >
               {p.label}
             </button>
           )
         })}
-        <span className="num text-2xs ml-auto" style={{ color: 'var(--ink-muted)' }}>
-          {range.from} → {range.to}
-        </span>
+        <div className="flex items-center gap-3 ml-auto">
+          <span className="num text-xs" style={{ color: '#9B9BB0' }}>
+            {range.from} → {range.to}
+          </span>
+          <button
+            onClick={exportCsv}
+            disabled={!data || data.summary.saleCount === 0}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg border-[1.5px] transition-colors disabled:opacity-40"
+            style={{ borderColor: '#EDEDED', color: '#6B6B8A' }}
+            onMouseEnter={e => { if (data && data.summary.saleCount > 0) { (e.currentTarget as HTMLElement).style.background = '#F5EEFF'; (e.currentTarget as HTMLElement).style.borderColor = '#E4D6FF' } }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.borderColor = '#EDEDED' }}
+          >
+            Exportar CSV
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5">
@@ -155,44 +210,46 @@ export default function ReportsBoard() {
           <ErrorState onRetry={() => fetchReport(range.from, range.to)} />
         ) : !data || data.summary.saleCount === 0 ? (
           <div className="flex h-full min-h-[240px] flex-col items-center justify-center text-center">
-            <BarChart3 size={32} strokeWidth={1.5} style={{ color: 'var(--ink-muted)' }} />
-            <p className="mt-4 text-sm" style={{ color: 'var(--ink-secondary)' }}>
+            <BarChart3 size={32} strokeWidth={1.5} style={{ color: '#9B9BB0' }} />
+            <p className="mt-4 text-sm" style={{ color: '#6B6B8A' }}>
               No hay ventas registradas en este periodo
             </p>
           </div>
         ) : (
           <div className="space-y-6 max-w-4xl">
             {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <StatCard label="Ingresos" value={MXN(data.summary.totalRevenue)} accent />
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <StatCard label="Ingresos por servicios" value={MXN(data.summary.serviceRevenue)} accent />
               <StatCard label="Ventas" value={String(data.summary.saleCount)} />
               <StatCard label="Ticket promedio" value={MXN(data.summary.averageTicket)} />
+              <StatCard label="Propinas (a barberos)" value={MXN(data.summary.totalTips)} />
               <StatCard label="Comisiones" value={MXN(data.summary.totalCommissions)} />
+              <StatCard label="Neto" value={MXN(data.summary.netRevenue)} />
             </div>
 
-            {/* Métodos de pago */}
+            {/* Métodos de pago (sobre el total cobrado, incluye propina) */}
             <div>
               <p className="label-caps mb-3">Métodos de pago</p>
               <div className="space-y-1.5">
                 {Object.entries(data.byPaymentMethod).map(([method, info]) => {
-                  const pct = data.summary.totalRevenue > 0
-                    ? (info.total / data.summary.totalRevenue) * 100
+                  const pct = data.summary.totalCollected > 0
+                    ? (info.total / data.summary.totalCollected) * 100
                     : 0
                   return (
-                    <div key={method} className="p-3" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}>
+                    <div key={method} className="p-3 rounded-xl" style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED' }}>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm" style={{ color: 'var(--ink-primary)' }}>
+                        <span className="text-sm" style={{ color: '#0E0D1A' }}>
                           {PAYMENT_LABEL[method] ?? method}
-                          <span className="text-2xs ml-2" style={{ color: 'var(--ink-muted)' }}>
+                          <span className="text-2xs ml-2" style={{ color: '#9B9BB0' }}>
                             {info.count} venta{info.count !== 1 ? 's' : ''}
                           </span>
                         </span>
-                        <span className="num text-sm font-medium" style={{ color: 'var(--ink-primary)' }}>
+                        <span className="num text-sm font-medium" style={{ color: '#0E0D1A' }}>
                           {MXN(info.total)}
                         </span>
                       </div>
-                      <div className="h-1.5 w-full" style={{ background: 'var(--surface-0)' }}>
-                        <div className="h-full" style={{ width: `${pct}%`, background: 'var(--brass)' }} />
+                      <div className="h-1.5 w-full rounded-full" style={{ background: '#EDEDED' }}>
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#FF6B6B' }} />
                       </div>
                     </div>
                   )
@@ -206,20 +263,22 @@ export default function ReportsBoard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ color: 'var(--ink-muted)' }} className="text-2xs uppercase tracking-wide text-left">
+                    <tr className="text-2xs tracking-wide text-left" style={{ color: '#9B9BB0' }}>
                       <th className="py-2 font-medium">Barbero</th>
                       <th className="py-2 font-medium text-right">Ventas</th>
                       <th className="py-2 font-medium text-right">Ingresos</th>
+                      <th className="py-2 font-medium text-right">Propinas</th>
                       <th className="py-2 font-medium text-right">Comisión</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.byBarber.map(b => (
-                      <tr key={b.barberId} style={{ borderTop: '1px solid var(--border-subtle)' }}>
-                        <td className="py-2.5" style={{ color: 'var(--ink-primary)' }}>{b.name}</td>
-                        <td className="py-2.5 num text-right" style={{ color: 'var(--ink-secondary)' }}>{b.salesCount}</td>
-                        <td className="py-2.5 num text-right" style={{ color: 'var(--ink-primary)' }}>{MXN(b.salesTotal)}</td>
-                        <td className="py-2.5 num text-right" style={{ color: 'var(--brass)' }}>{MXN(b.commission)}</td>
+                      <tr key={b.barberId} style={{ borderTop: '1px solid #F0F0F5' }}>
+                        <td className="py-2.5" style={{ color: '#0E0D1A' }}>{b.name}</td>
+                        <td className="py-2.5 num text-right" style={{ color: '#6B6B8A' }}>{b.salesCount}</td>
+                        <td className="py-2.5 num text-right" style={{ color: '#0E0D1A' }}>{MXN(b.salesTotal)}</td>
+                        <td className="py-2.5 num text-right" style={{ color: '#6B6B8A' }}>{MXN(b.tips)}</td>
+                        <td className="py-2.5 num text-right" style={{ color: '#FF6B6B' }}>{MXN(b.commission)}</td>
                       </tr>
                     ))}
                   </tbody>
