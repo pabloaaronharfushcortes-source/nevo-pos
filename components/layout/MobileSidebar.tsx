@@ -86,7 +86,7 @@ export default function MobileSidebar({ userName, userRole, logoutButton }: Prop
           </button>
         </div>
 
-        <SidebarNav />
+        <SidebarNav role={userRole} />
 
         <div className="px-3 py-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           {logoutButton}

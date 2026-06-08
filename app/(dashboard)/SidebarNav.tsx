@@ -2,20 +2,22 @@
 
 import Link from 'next/link'
 
+// adminOnly: Reportes y Configuración son módulos restringidos a admin (CLAUDE.md §3)
 const NAV_ITEMS = [
   { href: '/agenda',        label: 'Agenda' },
   { href: '/queue',         label: 'Cola' },
   { href: '/pos',           label: 'POS' },
   { href: '/clients',       label: 'Clientes' },
   { href: '/conversations', label: 'Conversaciones' },
-  { href: '/reports',       label: 'Reportes' },
-  { href: '/settings',      label: 'Configuración' },
+  { href: '/reports',       label: 'Reportes', adminOnly: true },
+  { href: '/settings',      label: 'Configuración', adminOnly: true },
 ]
 
-export default function SidebarNav() {
+export default function SidebarNav({ role }: { role?: string }) {
+  const items = NAV_ITEMS.filter(item => !item.adminOnly || role === 'admin')
   return (
     <nav className="flex-1 px-3 py-4 space-y-px overflow-y-auto">
-      {NAV_ITEMS.map(({ href, label }) => (
+      {items.map(({ href, label }) => (
         <Link
           key={href}
           href={href}

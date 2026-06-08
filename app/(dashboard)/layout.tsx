@@ -36,7 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {user.role}
           </p>
         </div>
-        <SidebarNav />
+        <SidebarNav role={user.role} />
         <div className="px-3 py-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           <LogoutButton />
         </div>
