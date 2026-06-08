@@ -30,17 +30,17 @@ export default function HandoffToggle({ mode, onChange }: Props) {
       <button
         onClick={() => setConfirming(true)}
         disabled={pending}
-        className="flex items-center gap-2 px-3 py-1.5 text-2xs font-medium uppercase tracking-wide transition-colors disabled:opacity-40"
+        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border-[1.5px] transition-colors disabled:opacity-40"
         style={
           isHuman
-            ? { background: 'var(--brass)', color: '#0C0A09' }
-            : { border: '1px solid var(--border-default)', color: 'var(--ink-secondary)' }
+            ? { background: '#FF6B6B', color: '#FFFFFF', borderColor: '#FF6B6B' }
+            : { borderColor: '#EDEDED', color: '#6B6B8A' }
         }
         title={isHuman ? 'Devolver el control al agente' : 'Tomar el control de la conversación'}
       >
         <span
           className="w-1.5 h-1.5 rounded-full"
-          style={{ background: isHuman ? '#0C0A09' : 'var(--brass)' }}
+          style={{ background: isHuman ? '#FFFFFF' : '#FF6B6B' }}
         />
         {pending ? '…' : isHuman ? 'Control humano' : 'Tomar control'}
       </button>
