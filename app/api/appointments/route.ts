@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
+import { appointmentsQuerySchema, createAppointmentSchema } from '@/lib/validation/appointments'
+import { readJsonBody, searchParamsToObject } from '@/lib/validation'
+import { err } from '@/lib/utils/api-response'
 
 const APPOINTMENT_SELECT = `
   id, tenant_id, client_id, barber_id, service_id,
@@ -14,15 +17,13 @@ const APPOINTMENT_SELECT = `
 export async function GET(request: NextRequest) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
-    const { searchParams } = new URL(request.url)
-    const from = searchParams.get('from')
-    const to = searchParams.get('to')
-
-    if (!from || !to) {
-      return NextResponse.json({ error: 'Parámetros from y to requeridos' }, { status: 400 })
+    const parsed = appointmentsQuerySchema.safeParse(searchParamsToObject(request.url))
+    if (!parsed.success) {
+      return err('Datos inválidos', 400, parsed.error.flatten())
     }
+    const { from, to } = parsed.data
 
     const supabase = await createClient()
 
@@ -36,34 +37,22 @@ export async function GET(request: NextRequest) {
     if (error) throw error
 
     return NextResponse.json(data)
-  } catch (err) {
-    console.error('[api/appointments GET]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/appointments GET]', error)
+    return err('Error interno del servidor', 500)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
-    const body = await request.json() as {
-      clientId?: string
-      barberId?: string
-      serviceId?: string
-      startsAt?: string
-      notes?: string
-      bookedVia?: string
+    const parsed = createAppointmentSchema.safeParse(await readJsonBody(request))
+    if (!parsed.success) {
+      return err('Datos inválidos', 400, parsed.error.flatten())
     }
-
-    const { clientId, barberId, serviceId, startsAt, notes, bookedVia } = body
-
-    if (!clientId || !barberId || !serviceId || !startsAt) {
-      return NextResponse.json(
-        { error: 'Campos requeridos: clientId, barberId, serviceId, startsAt' },
-        { status: 400 }
-      )
-    }
+    const { clientId, barberId, serviceId, startsAt, notes, bookedVia } = parsed.data
 
     const supabase = await createClient()
 
@@ -74,7 +63,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (svcError || !service) {
-      return NextResponse.json({ error: 'Servicio no encontrado' }, { status: 404 })
+      return err('Servicio no encontrado', 404)
     }
 
     const startsAtDate = new Date(startsAt)
@@ -93,10 +82,7 @@ export async function POST(request: NextRequest) {
     if (conflictError) throw conflictError
 
     if (conflicts && conflicts > 0) {
-      return NextResponse.json(
-        { error: 'Conflicto de horario: el barbero ya tiene una cita en ese horario' },
-        { status: 409 }
-      )
+      return err('Conflicto de horario: el barbero ya tiene una cita en ese horario', 409)
     }
 
     const { data: appointment, error: insertError } = await supabase
@@ -118,8 +104,8 @@ export async function POST(request: NextRequest) {
     if (insertError) throw insertError
 
     return NextResponse.json(appointment, { status: 201 })
-  } catch (err) {
-    console.error('[api/appointments POST]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/appointments POST]', error)
+    return err('Error interno del servidor', 500)
   }
 }

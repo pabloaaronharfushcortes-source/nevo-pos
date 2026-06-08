@@ -1,6 +1,10 @@
 'use client'
 
+import { MessageSquare } from 'lucide-react'
 import type { ConversationWithClient } from '@/types/app'
+import { SkeletonList } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 
 type Props = {
   conversations: ConversationWithClient[]
@@ -9,6 +13,8 @@ type Props = {
   filter: string
   onFilterChange: (filter: string) => void
   loading: boolean
+  error: boolean
+  onRetry: () => void
 }
 
 const FILTER_OPTIONS = [
@@ -36,6 +42,8 @@ export default function ConversationList({
   filter,
   onFilterChange,
   loading,
+  error,
+  onRetry,
 }: Props) {
   const visible = filter
     ? conversations.filter(c => c.mode === filter)
@@ -71,10 +79,15 @@ export default function ConversationList({
 
       {/* Lista */}
       <div className="flex-1 overflow-y-auto">
-        {visible.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-sm" style={{ color: 'var(--ink-muted)' }}>
-            {loading ? 'Cargando…' : 'Sin conversaciones'}
-          </div>
+        {loading && visible.length === 0 ? (
+          <SkeletonList rows={6} />
+        ) : error && visible.length === 0 ? (
+          <ErrorState onRetry={onRetry} />
+        ) : visible.length === 0 ? (
+          <EmptyState
+            icon={MessageSquare}
+            message={filter ? 'Sin conversaciones en este filtro' : 'No hay conversaciones activas'}
+          />
         ) : (
           visible.map(conv => {
             const isSelected = conv.id === selectedId

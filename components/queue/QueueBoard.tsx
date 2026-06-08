@@ -1,10 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { ListChecks } from 'lucide-react'
 import type { Barber, Service, QueueTicketWithRelations } from '@/types/app'
 import { useQueue } from '@/hooks/useQueue'
 import NewTicketModal from './NewTicketModal'
 import SaleModal from '@/components/pos/SaleModal'
+import { SkeletonList } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 
 type Props = {
   tenantId: string
@@ -55,7 +59,7 @@ type SaleContext = {
 }
 
 export default function QueueBoard({ tenantId, initialTickets, barbers, services }: Props) {
-  const { tickets, loading, refresh } = useQueue(tenantId, initialTickets)
+  const { tickets, loading, error, refresh } = useQueue(tenantId, initialTickets)
   const [showNewModal, setShowNewModal] = useState(false)
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -104,11 +108,17 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
 
       {/* Board */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
-        {tickets.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-            <p className="text-lg">No hay fichas activas</p>
-            <p className="text-sm mt-1">Crea una ficha para comenzar</p>
-          </div>
+        {loading && tickets.length === 0 ? (
+          <SkeletonList rows={5} />
+        ) : error && tickets.length === 0 ? (
+          <ErrorState onRetry={refresh} />
+        ) : tickets.length === 0 ? (
+          <EmptyState
+            icon={ListChecks}
+            message="No hay fichas activas en este momento"
+            actionLabel="Crear ficha"
+            onAction={() => setShowNewModal(true)}
+          />
         ) : (
           <div className="space-y-2 max-w-2xl">
             {STATUS_ORDER.flatMap(status =>

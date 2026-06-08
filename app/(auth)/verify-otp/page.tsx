@@ -52,9 +52,14 @@ export default function VerifyOtpPage() {
       body: JSON.stringify({ code })
     })
 
-    const data = await res.json() as { status?: string; error?: string }
+    const data = await res.json() as { status?: string; error?: string; redirect?: string }
 
     if (!res.ok) {
+      // Bloqueo por demasiados intentos: el servidor invalidó la sesión → volver al login
+      if (data.redirect) {
+        router.push(`${data.redirect}?error=${encodeURIComponent(data.error ?? 'Sesión expirada por intentos fallidos.')}`)
+        return
+      }
       setError(data.error ?? 'Código incorrecto')
       setLoading(false)
       setDigits(Array(DIGITS).fill(''))

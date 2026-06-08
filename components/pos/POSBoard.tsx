@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { Receipt } from 'lucide-react'
 import type { Barber, Service, SaleWithRelations, CashRegister } from '@/types/app'
 import CashRegisterWidget from './CashRegisterWidget'
 import SaleModal from './SaleModal'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 type Props = {
   tenantId: string
@@ -76,10 +78,12 @@ export default function POSBoard({
 
         {/* Ventas del día */}
         {sales.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-            <p className="text-lg">Sin ventas hoy</p>
-            <p className="text-sm mt-1">Crea una venta para comenzar</p>
-          </div>
+          <EmptyState
+            icon={Receipt}
+            message="No hay ventas registradas hoy"
+            actionLabel="Nueva venta"
+            onAction={() => setModalCtx({})}
+          />
         ) : (
           <div className="space-y-2 max-w-2xl">
             {sales.map(sale => (

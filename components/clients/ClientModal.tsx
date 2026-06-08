@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Barber, Client } from '@/types/app'
+import { toast } from '@/hooks/useToast'
 
 type Props = {
   barbers: Barber[]
@@ -76,10 +77,16 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
         body: JSON.stringify(payload),
       })
       const data: Client | { error: string } = await res.json()
-      if (!res.ok || 'error' in data) { setError('error' in data ? data.error : 'Error al guardar'); return }
+      if (!res.ok || 'error' in data) {
+        setError('error' in data ? data.error : 'Error al guardar')
+        toast.error('Algo salió mal. Intenta de nuevo.')
+        return
+      }
+      toast.success(client ? 'Perfil actualizado' : 'Cliente agregado')
       onSaved(data)
     } catch {
       setError('Error de conexión')
+      toast.error('Algo salió mal. Intenta de nuevo.')
     } finally {
       setSubmitting(false)
     }

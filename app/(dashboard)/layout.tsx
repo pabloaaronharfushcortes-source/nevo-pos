@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/supabase/auth'
 import LogoutButton from './LogoutButton'
 import SidebarNav from './SidebarNav'
+import ToastContainer from '@/components/ui/ToastContainer'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser()
@@ -64,6 +65,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <main className="flex-1 overflow-auto min-w-0">
         {children}
       </main>
+
+      <ToastContainer />
     </div>
   )
 }

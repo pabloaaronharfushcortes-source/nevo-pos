@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
+import { err } from '@/lib/utils/api-response'
+import { updateAppointmentSchema } from '@/lib/validation/appointments'
+import { readJsonBody } from '@/lib/validation'
 import type { Database } from '@/types/database'
 
 type AppointmentUpdate = Database['public']['Tables']['appointments']['Update']
@@ -20,13 +23,13 @@ export async function PATCH(
 ) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
-    const body = await request.json() as {
-      status?: string
-      notes?: string
-      cancellationReason?: string
+    const parsed = updateAppointmentSchema.safeParse(await readJsonBody(request))
+    if (!parsed.success) {
+      return err('Datos inválidos', 400, parsed.error.flatten())
     }
+    const body = parsed.data
 
     const update: AppointmentUpdate = {}
 
@@ -53,8 +56,8 @@ export async function PATCH(
     if (error) throw error
 
     return NextResponse.json(data)
-  } catch (err) {
-    console.error('[api/appointments/[id] PATCH]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/appointments/[id] PATCH]', error)
+    return err('Error interno del servidor', 500)
   }
 }

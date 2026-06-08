@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
+import { err } from '@/lib/utils/api-response'
 
 const CONVERSATION_SELECT = `
   id, tenant_id, client_id, whatsapp_id, mode,
@@ -16,7 +17,7 @@ export async function GET(
 ) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
     const supabase = await createClient()
 
@@ -28,7 +29,7 @@ export async function GET(
       .single()
 
     if (error || !conversation) {
-      return NextResponse.json({ error: 'Conversación no encontrada' }, { status: 404 })
+      return err('Conversación no encontrada', 404)
     }
 
     const { data: messages, error: msgError } = await supabase
@@ -51,8 +52,8 @@ export async function GET(
     }
 
     return NextResponse.json({ ...conversation, messages: messages ?? [] })
-  } catch (err) {
-    console.error('[api/conversations/:id GET]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/conversations/:id GET]', error)
+    return err('Error interno del servidor', 500)
   }
 }

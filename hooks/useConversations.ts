@@ -12,17 +12,19 @@ export function useConversations(
 ) {
   const [conversations, setConversations] = useState<ConversationWithClient[]>(initial)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
+    setError(false)
     try {
       const res = await fetch('/api/conversations')
-      if (res.ok) {
-        const data: ConversationWithClient[] = await res.json()
-        setConversations(data)
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data: ConversationWithClient[] = await res.json()
+      setConversations(data)
     } catch (err) {
       console.error('[useConversations] Error al refrescar:', err)
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -35,5 +37,5 @@ export function useConversations(
     onEvent: refresh,
   })
 
-  return { conversations, loading, refresh, setConversations }
+  return { conversations, loading, error, refresh, setConversations }
 }

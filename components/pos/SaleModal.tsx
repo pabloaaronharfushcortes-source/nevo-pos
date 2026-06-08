@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Barber, Service, SaleWithRelations } from '@/types/app'
+import { toast } from '@/hooks/useToast'
 
 type LineItem = {
   tempId: string
@@ -129,12 +130,15 @@ export default function SaleModal({
 
       if (!res.ok || 'error' in data) {
         setError('error' in data ? data.error : 'Error al guardar')
+        toast.error('Algo salió mal. Intenta de nuevo.')
         return
       }
 
+      toast.success(`Venta registrada · $${total.toFixed(2)}`)
       onSaved(data)
     } catch {
       setError('Error de conexión')
+      toast.error('Algo salió mal. Intenta de nuevo.')
     } finally {
       setSubmitting(false)
     }

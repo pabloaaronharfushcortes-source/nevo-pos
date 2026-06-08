@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
+import { err } from '@/lib/utils/api-response'
 import { assignQueueTicket } from '@/lib/utils/queue'
+import { queueQuerySchema, createTicketSchema } from '@/lib/validation/queue'
+import { readJsonBody, searchParamsToObject } from '@/lib/validation'
 
 const TICKET_SELECT = `
   id, tenant_id, client_id, barber_id, service_id,
@@ -14,10 +17,13 @@ const TICKET_SELECT = `
 export async function GET(request: NextRequest) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
-    const { searchParams } = new URL(request.url)
-    const date = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+    const parsed = queueQuerySchema.safeParse(searchParamsToObject(request.url))
+    if (!parsed.success) {
+      return err('Datos inválidos', 400, parsed.error.flatten())
+    }
+    const date = parsed.data.date ?? new Date().toISOString().split('T')[0]
 
     const supabase = await createClient()
 
@@ -32,23 +38,22 @@ export async function GET(request: NextRequest) {
     if (error) throw error
 
     return NextResponse.json(data)
-  } catch (err) {
-    console.error('[api/queue GET]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/queue GET]', error)
+    return err('Error interno del servidor', 500)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
-    const body = await request.json() as {
-      barberId?: string
-      serviceId?: string
-      clientId?: string
-      source?: string
+    const parsed = createTicketSchema.safeParse(await readJsonBody(request))
+    if (!parsed.success) {
+      return err('Datos inválidos', 400, parsed.error.flatten())
     }
+    const body = parsed.data
 
     const supabase = await createClient()
 
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
     })
 
     if ('error' in result) {
-      return NextResponse.json({ error: result.error }, { status: 422 })
+      return err(result.error, 422)
     }
 
     // Fetch with relations for the response
@@ -87,8 +92,8 @@ export async function POST(request: NextRequest) {
     if (fetchError) throw fetchError
 
     return NextResponse.json(ticket, { status: 201 })
-  } catch (err) {
-    console.error('[api/queue POST]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/queue POST]', error)
+    return err('Error interno del servidor', 500)
   }
 }

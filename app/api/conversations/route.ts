@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
+import { err } from '@/lib/utils/api-response'
+import { conversationsQuerySchema } from '@/lib/validation/conversations'
+import { searchParamsToObject } from '@/lib/validation'
 
 const CONVERSATION_SELECT = `
   id, tenant_id, client_id, whatsapp_id, mode,
@@ -12,10 +15,13 @@ const CONVERSATION_SELECT = `
 export async function GET(request: NextRequest) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
-    const { searchParams } = new URL(request.url)
-    const mode = searchParams.get('mode') // 'agent' | 'human' | null (todos)
+    const parsed = conversationsQuerySchema.safeParse(searchParamsToObject(request.url))
+    if (!parsed.success) {
+      return err('Datos inválidos', 400, parsed.error.flatten())
+    }
+    const mode = parsed.data.mode // 'agent' | 'human' | undefined (todos)
 
     const supabase = await createClient()
 
@@ -34,8 +40,8 @@ export async function GET(request: NextRequest) {
     if (error) throw error
 
     return NextResponse.json(data ?? [])
-  } catch (err) {
-    console.error('[api/conversations GET]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/conversations GET]', error)
+    return err('Error interno del servidor', 500)
   }
 }

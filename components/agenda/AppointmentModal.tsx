@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import type { Barber, Service, AppointmentWithRelations } from '@/types/app'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { toast } from '@/hooks/useToast'
 
 type ClientResult = {
   id: string
@@ -147,8 +149,10 @@ export default function AppointmentModal({
         if (!res.ok) {
           const data = await res.json() as { error?: string }
           setError(data.error ?? 'Error al crear la cita')
+          toast.error('Algo salió mal. Intenta de nuevo.')
           return
         }
+        toast.success('Cita registrada correctamente')
       } else if (mode === 'edit' && appointment) {
         const res = await fetch(`/api/appointments/${appointment.id}`, {
           method: 'PATCH',
@@ -162,13 +166,16 @@ export default function AppointmentModal({
         if (!res.ok) {
           const data = await res.json() as { error?: string }
           setError(data.error ?? 'Error al actualizar la cita')
+          toast.error('Algo salió mal. Intenta de nuevo.')
           return
         }
+        toast.success('Cita actualizada')
       }
 
       onSaved()
     } catch {
       setError('Error de conexión')
+      toast.error('Algo salió mal. Intenta de nuevo.')
     } finally {
       setSaving(false)
     }
@@ -192,12 +199,15 @@ export default function AppointmentModal({
       if (!res.ok) {
         const data = await res.json() as { error?: string }
         setError(data.error ?? 'Error al cancelar')
+        toast.error('Algo salió mal. Intenta de nuevo.')
         return
       }
 
+      toast.success('Cita cancelada')
       onSaved()
     } catch {
       setError('Error de conexión')
+      toast.error('Algo salió mal. Intenta de nuevo.')
     } finally {
       setSaving(false)
     }
@@ -404,33 +414,12 @@ export default function AppointmentModal({
         {/* Footer */}
         <div className="px-6 py-4 border-t flex items-center justify-between gap-3">
           {mode === 'edit' && appointment?.status !== 'cancelled' && (
-            <div>
-              {confirmingCancel ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">¿Confirmar cancelación?</span>
-                  <button
-                    onClick={handleCancelAppointment}
-                    disabled={saving}
-                    className="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-                  >
-                    Sí, cancelar
-                  </button>
-                  <button
-                    onClick={() => setConfirmingCancel(false)}
-                    className="px-3 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50"
-                  >
-                    No
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setConfirmingCancel(true)}
-                  className="text-sm text-red-600 hover:text-red-700"
-                >
-                  Cancelar cita
-                </button>
-              )}
-            </div>
+            <button
+              onClick={() => setConfirmingCancel(true)}
+              className="text-sm text-red-600 hover:text-red-700"
+            >
+              Cancelar cita
+            </button>
           )}
 
           <div className="flex items-center gap-3 ml-auto">
@@ -450,6 +439,17 @@ export default function AppointmentModal({
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmingCancel}
+        title="Cancelar cita"
+        description="Esta acción marcará la cita como cancelada. No se puede deshacer."
+        confirmLabel="Sí, cancelar cita"
+        cancelLabel="No"
+        variant="danger"
+        onConfirm={handleCancelAppointment}
+        onCancel={() => setConfirmingCancel(false)}
+      />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -9,6 +9,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Mensaje de error pasado por query param (ej. bloqueo por intentos fallidos de OTP)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const queryError = params.get('error')
+    if (queryError) setError(queryError)
+  }, [])
 
   async function handleSubmit() {
     setLoading(true)

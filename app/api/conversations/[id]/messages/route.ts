@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
+import { err } from '@/lib/utils/api-response'
 import { sendWhatsAppText } from '@/lib/whatsapp/send'
+import { sendMessageSchema } from '@/lib/validation/conversations'
+import { readJsonBody } from '@/lib/validation'
 
 // GET /api/conversations/:id/messages — hilo de mensajes (para polling/refresco ligero)
 export async function GET(
@@ -10,7 +13,7 @@ export async function GET(
 ) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
     const supabase = await createClient()
 
@@ -22,7 +25,7 @@ export async function GET(
       .eq('tenant_id', user.tenantId)
       .single()
 
-    if (!conv) return NextResponse.json({ error: 'Conversación no encontrada' }, { status: 404 })
+    if (!conv) return err('Conversación no encontrada', 404)
 
     const { data, error } = await supabase
       .from('messages')
@@ -33,9 +36,9 @@ export async function GET(
 
     if (error) throw error
     return NextResponse.json(data ?? [])
-  } catch (err) {
-    console.error('[api/conversations/:id/messages GET]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/conversations/:id/messages GET]', error)
+    return err('Error interno del servidor', 500)
   }
 }
 
@@ -47,11 +50,13 @@ export async function POST(
 ) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!user) return err('No autorizado', 401)
 
-    const body = await request.json() as { text?: string }
-    const text = body.text?.trim()
-    if (!text) return NextResponse.json({ error: 'El mensaje está vacío' }, { status: 400 })
+    const parsed = sendMessageSchema.safeParse(await readJsonBody(request))
+    if (!parsed.success) {
+      return err('Datos inválidos', 400, parsed.error.flatten())
+    }
+    const text = parsed.data.text.trim()
 
     const supabase = await createClient()
 
@@ -64,7 +69,7 @@ export async function POST(
       .single()
 
     if (!conversation) {
-      return NextResponse.json({ error: 'Conversación no encontrada' }, { status: 404 })
+      return err('Conversación no encontrada', 404)
     }
 
     const { data: tenant } = await supabase
@@ -74,10 +79,7 @@ export async function POST(
       .single()
 
     if (!tenant?.whatsapp_phone_number_id || !tenant?.whatsapp_access_token) {
-      return NextResponse.json(
-        { error: 'El negocio no tiene WhatsApp configurado' },
-        { status: 422 }
-      )
+      return err('El negocio no tiene WhatsApp configurado', 422)
     }
 
     const sent = await sendWhatsAppText({
@@ -88,7 +90,7 @@ export async function POST(
     })
 
     if (!sent.ok) {
-      return NextResponse.json({ error: sent.error }, { status: 502 })
+      return err('No se pudo enviar el mensaje por WhatsApp', 502)
     }
 
     // Persistir el mensaje saliente
@@ -118,8 +120,8 @@ export async function POST(
       .eq('tenant_id', user.tenantId)
 
     return NextResponse.json(message, { status: 201 })
-  } catch (err) {
-    console.error('[api/conversations/:id/messages POST]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/conversations/:id/messages POST]', error)
+    return err('Error interno del servidor', 500)
   }
 }

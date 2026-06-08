@@ -1,9 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Users } from 'lucide-react'
 import type { Barber, Client, ClientWithProfile } from '@/types/app'
 import ClientModal from './ClientModal'
 import ClientProfilePanel from './ClientProfilePanel'
+import { SkeletonList } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 
 type Props = {
   barbers: Barber[]
@@ -47,6 +51,7 @@ export default function ClientsBoard({ barbers }: Props) {
   const [clients, setClients] = useState<ListClient[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [profile, setProfile] = useState<ClientWithProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(false)
@@ -55,17 +60,20 @@ export default function ClientsBoard({ barbers }: Props) {
 
   const fetchClients = useCallback(async (q: string, cls: string) => {
     setLoading(true)
+    setError(false)
     try {
       const params = new URLSearchParams()
       if (q.trim().length >= 2) params.set('search', q.trim())
       if (cls) params.set('classification', cls)
 
       const res = await fetch(`/api/clients?${params}`)
-      if (res.ok) {
-        const data: ApiResponse = await res.json()
-        setClients(data.clients)
-        setTotal(data.total)
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data: ApiResponse = await res.json()
+      setClients(data.clients)
+      setTotal(data.total)
+    } catch (err) {
+      console.error('[ClientsBoard] Error al cargar clientes:', err)
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -176,10 +184,17 @@ export default function ClientsBoard({ barbers }: Props) {
 
         {/* Lista */}
         <div className="flex-1 overflow-y-auto">
-          {!loading && clients.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-sm" style={{ color: 'var(--ink-muted)' }}>
-              Sin resultados
-            </div>
+          {loading ? (
+            <SkeletonList rows={7} />
+          ) : error ? (
+            <ErrorState onRetry={() => fetchClients(search, classification)} />
+          ) : clients.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              message={search || classification ? 'Sin resultados para esta búsqueda' : 'Aún no tienes clientes registrados'}
+              actionLabel="Agregar cliente"
+              onAction={() => setShowNewModal(true)}
+            />
           ) : (
             clients.map(client => {
               const isSelected = client.id === selectedId

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import type { CashRegister } from '@/types/app'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { toast } from '@/hooks/useToast'
 
 type Props = {
   activeRegister: CashRegister | null
@@ -17,6 +19,7 @@ export default function CashRegisterWidget({ activeRegister, onOpened, onClosed 
   const [formNotes, setFormNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmingClose, setConfirmingClose] = useState(false)
 
   async function handleOpen() {
     const amount = parseFloat(openingAmount)
@@ -33,17 +36,28 @@ export default function CashRegisterWidget({ activeRegister, onOpened, onClosed 
       const data: CashRegister | { error: string } = await res.json()
       if (!res.ok || 'error' in data) {
         setError('error' in data ? data.error : 'Error al abrir turno')
+        toast.error('Algo salió mal. Intenta de nuevo.')
         return
       }
       setShowOpenForm(false)
       setOpeningAmount('')
       setFormNotes('')
+      toast.success('Turno de caja iniciado')
       onOpened(data)
     } catch {
       setError('Error de conexión')
+      toast.error('Algo salió mal. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
+  }
+
+  // Valida el monto y abre el modal de confirmación antes de cerrar el turno
+  function requestClose() {
+    const amount = parseFloat(closingAmount)
+    if (isNaN(amount) || amount < 0) { setError('Ingresa el monto en caja'); return }
+    setError(null)
+    setConfirmingClose(true)
   }
 
   async function handleClose() {
@@ -51,6 +65,7 @@ export default function CashRegisterWidget({ activeRegister, onOpened, onClosed 
     const amount = parseFloat(closingAmount)
     if (isNaN(amount) || amount < 0) { setError('Ingresa el monto en caja'); return }
 
+    setConfirmingClose(false)
     setLoading(true)
     setError(null)
     try {
@@ -62,14 +77,17 @@ export default function CashRegisterWidget({ activeRegister, onOpened, onClosed 
       const data: CashRegister | { error: string } = await res.json()
       if (!res.ok || 'error' in data) {
         setError('error' in data ? data.error : 'Error al cerrar turno')
+        toast.error('Algo salió mal. Intenta de nuevo.')
         return
       }
       setShowCloseForm(false)
       setClosingAmount('')
       setFormNotes('')
+      toast.success('Turno de caja cerrado')
       onClosed(data)
     } catch {
       setError('Error de conexión')
+      toast.error('Algo salió mal. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -129,7 +147,7 @@ export default function CashRegisterWidget({ activeRegister, onOpened, onClosed 
               />
             </div>
             <button
-              onClick={handleClose}
+              onClick={requestClose}
               disabled={loading}
               className="px-4 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50 transition-colors"
             >
@@ -138,6 +156,17 @@ export default function CashRegisterWidget({ activeRegister, onOpened, onClosed 
             {error && <p className="w-full text-xs text-red-600">{error}</p>}
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={confirmingClose}
+          title="Cerrar turno de caja"
+          description="Se cerrará el turno y se calculará la diferencia contra lo esperado. No se puede reabrir."
+          confirmLabel="Sí, cerrar caja"
+          cancelLabel="Cancelar"
+          variant="danger"
+          onConfirm={handleClose}
+          onCancel={() => setConfirmingClose(false)}
+        />
       </div>
     )
   }

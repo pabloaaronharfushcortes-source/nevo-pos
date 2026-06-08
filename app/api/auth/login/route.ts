@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { generateOtp, encryptPending } from '@/lib/auth/otp'
+import { loginRateLimit } from '@/lib/auth/rate-limit'
+import { getClientIp } from '@/lib/auth/get-ip'
 import { sendOtpEmail } from '@/lib/email'
+import { loginSchema } from '@/lib/validation/auth'
+import { readJsonBody } from '@/lib/validation'
 import type { Database } from '@/types/database'
 
 const PENDING_COOKIE = 'auth_pending'
@@ -9,12 +13,21 @@ const OTP_TTL_MS = 5 * 60 * 1000 // 5 minutos
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as { email?: string; password?: string }
-    const { email, password } = body
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email y contraseña requeridos' }, { status: 400 })
+    // Rate limiting por IP: máximo 10 intentos cada 15 minutos (CLAUDE.md §11)
+    const ip = getClientIp(request)
+    const limit = await loginRateLimit(ip)
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'Demasiados intentos. Intenta de nuevo en 15 minutos.', retryAfter: limit.retryAfter },
+        { status: 429 }
+      )
     }
+
+    const parsed = loginSchema.safeParse(await readJsonBody(request))
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+    }
+    const { email, password } = parsed.data
 
     // Interceptamos las cookies que Supabase quiere escribir — no se mandan al cliente
     // hasta que el OTP sea verificado

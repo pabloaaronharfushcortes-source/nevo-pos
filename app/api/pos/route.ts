@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
 import { getCurrentQuincena, computeCommission } from '@/lib/utils/commissions'
 import { updateClientAfterSale } from '@/lib/utils/clients'
+import { createSaleSchema } from '@/lib/validation/pos'
+import { readJsonBody } from '@/lib/validation'
+import { err } from '@/lib/utils/api-response'
 import type { Database } from '@/types/database'
 
 type SaleInsert = Database['public']['Tables']['sales']['Insert']
@@ -20,51 +23,40 @@ const SALE_SELECT = `
 ` as const
 
 export async function GET() {
-  const user = await getSessionUser()
-  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    const user = await getSessionUser()
+    if (!user) return err('No autorizado', 401)
 
-  const supabase = await createClient()
-  const today = new Date().toISOString().split('T')[0]
+    const supabase = await createClient()
+    const today = new Date().toISOString().split('T')[0]
 
-  const { data, error } = await supabase
-    .from('sales')
-    .select(SALE_SELECT)
-    .eq('tenant_id', user.tenantId)
-    .is('deleted_at', null)
-    .gte('created_at', `${today}T00:00:00.000Z`)
-    .lt('created_at', `${today}T23:59:59.999Z`)
-    .order('created_at', { ascending: false })
+    const { data, error } = await supabase
+      .from('sales')
+      .select(SALE_SELECT)
+      .eq('tenant_id', user.tenantId)
+      .is('deleted_at', null)
+      .gte('created_at', `${today}T00:00:00.000Z`)
+      .lt('created_at', `${today}T23:59:59.999Z`)
+      .order('created_at', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
-}
-
-type IncomingItem = {
-  serviceId?: string
-  name: string
-  price: number
-  quantity: number
-}
-
-type PostBody = {
-  barberId: string
-  items: IncomingItem[]
-  discount?: number
-  paymentMethod: string
-  paymentReference?: string
-  notes?: string
-  clientId?: string
-  queueTicketId?: string
-  appointmentId?: string
-  cashRegisterId?: string
+    if (error) throw error
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('[api/pos GET]', error)
+    return err('Error interno del servidor', 500)
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getSessionUser()
-  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    const user = await getSessionUser()
+    if (!user) return err('No autorizado', 401)
 
-  const body = await request.json() as PostBody
-  const {
+    const parsed = createSaleSchema.safeParse(await readJsonBody(request))
+    if (!parsed.success) {
+      return err('Datos inválidos', 400, parsed.error.flatten())
+    }
+    const {
     barberId,
     items,
     discount = 0,
@@ -75,11 +67,7 @@ export async function POST(request: NextRequest) {
     queueTicketId,
     appointmentId,
     cashRegisterId,
-  } = body
-
-  if (!barberId || !items?.length || !paymentMethod) {
-    return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
-  }
+  } = parsed.data
 
   const supabase = await createClient()
 
@@ -90,7 +78,7 @@ export async function POST(request: NextRequest) {
     .eq('tenant_id', user.tenantId)
     .single()
 
-  if (!barber) return NextResponse.json({ error: 'Barbero no encontrado' }, { status: 404 })
+  if (!barber) return err('Barbero no encontrado', 404)
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100)
@@ -118,10 +106,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (saleError || !sale) {
-    return NextResponse.json(
-      { error: saleError?.message ?? 'Error al crear venta' },
-      { status: 500 }
-    )
+    throw saleError ?? new Error('No se pudo crear la venta')
   }
 
   const saleItemsInsert: SaleItemInsert[] = items.map(item => ({
@@ -135,7 +120,7 @@ export async function POST(request: NextRequest) {
   }))
 
   const { error: itemsError } = await supabase.from('sale_items').insert(saleItemsInsert)
-  if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 })
+  if (itemsError) throw itemsError
 
   const quincena = getCurrentQuincena()
   const commissionInsert: CommissionInsert = {
@@ -178,7 +163,11 @@ export async function POST(request: NextRequest) {
     .eq('id', sale.id)
     .single()
 
-  if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
+  if (fetchError) throw fetchError
 
-  return NextResponse.json(fullSale, { status: 201 })
+    return NextResponse.json(fullSale, { status: 201 })
+  } catch (error) {
+    console.error('[api/pos POST]', error)
+    return err('Error interno del servidor', 500)
+  }
 }

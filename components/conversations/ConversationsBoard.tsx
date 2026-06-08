@@ -13,7 +13,7 @@ type Props = {
 }
 
 export default function ConversationsBoard({ tenantId, initialConversations }: Props) {
-  const { conversations, loading, refresh } = useConversations(tenantId, initialConversations)
+  const { conversations, loading, error, refresh } = useConversations(tenantId, initialConversations)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [active, setActive] = useState<ConversationWithMessages | null>(null)
   const [filter, setFilter] = useState('')
@@ -72,6 +72,8 @@ export default function ConversationsBoard({ tenantId, initialConversations }: P
         filter={filter}
         onFilterChange={setFilter}
         loading={loading}
+        error={error}
+        onRetry={refresh}
       />
 
       <div className="flex-1 overflow-hidden" style={{ background: 'var(--surface-0)' }}>

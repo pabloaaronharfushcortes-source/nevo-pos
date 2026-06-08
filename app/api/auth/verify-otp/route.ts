@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { decryptPending, verifyOtp } from '@/lib/auth/otp'
+import { otpRateLimit, resetOtpRateLimit } from '@/lib/auth/rate-limit'
+import { verifyOtpSchema } from '@/lib/validation/auth'
+import { readJsonBody } from '@/lib/validation'
 import type { Database } from '@/types/database'
 
 const PENDING_COOKIE = 'auth_pending'
@@ -14,12 +17,11 @@ type PendingAuth = {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as { code?: string }
-    const { code } = body
-
-    if (!code || !/^\d{6}$/.test(code)) {
-      return NextResponse.json({ error: 'Código inválido' }, { status: 400 })
+    const parsed = verifyOtpSchema.safeParse(await readJsonBody(request))
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
     }
+    const { code } = parsed.data
 
     const pendingToken = request.cookies.get(PENDING_COOKIE)?.value
     if (!pendingToken) {
@@ -42,10 +44,23 @@ export async function POST(request: NextRequest) {
     }
 
     if (!verifyOtp(code, pending.otp)) {
+      // Cuenta el intento fallido por cookie auth_pending (máximo 5; al 6º se invalida)
+      const limit = await otpRateLimit(pendingToken)
+      if (!limit.allowed) {
+        // 6º intento incorrecto: invalida la cookie y obliga a reiniciar sesión
+        resetOtpRateLimit(pendingToken)
+        const blocked = NextResponse.json(
+          { error: 'Sesión expirada por intentos fallidos.', redirect: '/login' },
+          { status: 429 }
+        )
+        blocked.cookies.delete(PENDING_COOKIE)
+        return blocked
+      }
       return NextResponse.json({ error: 'Código incorrecto' }, { status: 401 })
     }
 
-    // OTP correcto — establecer la sesión real en cookies del navegador
+    // OTP correcto — limpia el contador y establece la sesión real en cookies del navegador
+    resetOtpRateLimit(pendingToken)
     const response = NextResponse.json({ status: 'ok' })
 
     const supabase = createServerClient<Database>(

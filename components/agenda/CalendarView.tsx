@@ -9,6 +9,7 @@ import type { EventClickArg, DateSelectArg, DatesSetArg, EventInput } from '@ful
 import esLocale from '@fullcalendar/core/locales/es'
 import type { Barber, Service, AppointmentWithRelations } from '@/types/app'
 import AppointmentModal from './AppointmentModal'
+import { ErrorState } from '@/components/ui/ErrorState'
 
 type ModalState =
   | { mode: 'closed' }
@@ -52,11 +53,13 @@ export default function CalendarView({
 
   const [allAppointments, setAllAppointments] = useState<AppointmentWithRelations[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
   const [filterBarberId, setFilterBarberId] = useState<string | null>(null)
   const [modal, setModal] = useState<ModalState>({ mode: 'closed' })
 
   const fetchAppointments = useCallback(async (from: string, to: string) => {
     setLoading(true)
+    setError(false)
     try {
       const res = await fetch(`/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -64,10 +67,17 @@ export default function CalendarView({
       setAllAppointments(data)
     } catch (err) {
       console.error('[CalendarView] Error al cargar citas:', err)
+      setError(true)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const retry = useCallback(() => {
+    if (currentRangeRef.current) {
+      fetchAppointments(currentRangeRef.current.from, currentRangeRef.current.to)
+    }
+  }, [fetchAppointments])
 
   const handleDatesSet = useCallback((info: DatesSetArg) => {
     currentRangeRef.current = { from: info.startStr, to: info.endStr }
@@ -148,7 +158,10 @@ export default function CalendarView({
       </div>
 
       {/* Calendario */}
-      <div className="flex-1 px-4 pb-4 pt-3 min-h-0">
+      <div className="flex-1 px-4 pb-4 pt-3 min-h-0 relative">
+        {error ? (
+          <ErrorState onRetry={retry} />
+        ) : (
         <FullCalendar
           ref={calendarRef}
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
@@ -179,6 +192,13 @@ export default function CalendarView({
           eventClick={handleEventClick}
           select={handleDateSelect}
         />
+        )}
+        {/* Estado vacío sutil: no hay citas en el rango visible */}
+        {!error && !loading && allAppointments.length === 0 && (
+          <div className="pointer-events-none absolute inset-x-0 top-1/2 text-center">
+            <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>No hay citas para hoy</p>
+          </div>
+        )}
       </div>
 
       {modal.mode !== 'closed' && (

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { err } from '@/lib/utils/api-response'
 import type { DisplayTicket } from '@/types/app'
 
 export async function GET(request: NextRequest) {
@@ -7,7 +8,7 @@ export async function GET(request: NextRequest) {
   const tenantSlug = searchParams.get('tenant')
 
   if (!tenantSlug) {
-    return NextResponse.json({ error: 'Parámetro tenant requerido' }, { status: 400 })
+    return err('Parámetro tenant requerido', 400)
   }
 
   try {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!tenant) {
-      return NextResponse.json({ error: 'Tenant no encontrado' }, { status: 404 })
+      return err('Tenant no encontrado', 404)
     }
 
     const { data: tickets, error } = await supabase
@@ -47,8 +48,8 @@ export async function GET(request: NextRequest) {
     }))
 
     return NextResponse.json(displayTickets)
-  } catch (err) {
-    console.error('[api/display/queue]', err)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+  } catch (error) {
+    console.error('[api/display/queue]', error)
+    return err('Error interno del servidor', 500)
   }
 }

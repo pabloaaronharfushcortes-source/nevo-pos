@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import type { Barber, Service } from '@/types/app'
+import { toast } from '@/hooks/useToast'
 
 type ClientResult = {
   id: string
@@ -80,16 +81,23 @@ export default function NewTicketModal({ barbers, services, onClose, onCreated }
         }),
       })
 
-      const data = await res.json() as { error?: string }
+      const data = await res.json() as {
+        error?: string
+        ticket_number?: number
+        barber?: { name?: string } | null
+      }
 
       if (!res.ok) {
         setError(data.error ?? 'Error al crear el ticket')
+        toast.error('Algo salió mal. Intenta de nuevo.')
         return
       }
 
+      toast.success(`Ficha ${data.ticket_number ?? ''} asignada a ${data.barber?.name ?? 'barbero'}`.trim())
       onCreated()
     } catch {
       setError('Error de conexión')
+      toast.error('Algo salió mal. Intenta de nuevo.')
     } finally {
       setSaving(false)
     }
