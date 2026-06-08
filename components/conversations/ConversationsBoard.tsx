@@ -76,15 +76,24 @@ export default function ConversationsBoard({ tenantId, initialConversations }: P
         onRetry={refresh}
       />
 
-      <div className="flex-1 overflow-hidden" style={{ background: 'var(--surface-0)' }}>
+      <div className={`overflow-hidden ${selectedId ? 'flex flex-1 flex-col' : 'hidden md:flex md:flex-1'}`} style={{ background: 'var(--surface-0)' }}>
         {active ? (
-          <MessageThread
-            conversation={active}
-            onModeChange={handleModeChange}
-            onMessageSent={handleMessageSent}
-          />
+          <>
+            <button
+              onClick={() => { setSelectedId(null); setActive(null) }}
+              className="md:hidden flex items-center gap-1 text-xs uppercase tracking-wide px-4 py-2 border-b transition-opacity hover:opacity-70 flex-shrink-0"
+              style={{ color: 'var(--ink-muted)', borderColor: 'var(--border-subtle)' }}
+            >
+              ← Conversaciones
+            </button>
+            <MessageThread
+              conversation={active}
+              onModeChange={handleModeChange}
+              onMessageSent={handleMessageSent}
+            />
+          </>
         ) : (
-          <div className="flex items-center justify-center h-full flex-col gap-2" style={{ color: 'var(--ink-muted)' }}>
+          <div className="hidden md:flex items-center justify-center h-full flex-col gap-2" style={{ color: 'var(--ink-muted)' }}>
             <p className="font-display text-lg" style={{ color: 'var(--ink-secondary)' }}>Selecciona una conversación</p>
             <p className="text-2xs uppercase tracking-widest">El hilo aparecerá aquí</p>
           </div>

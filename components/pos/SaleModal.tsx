@@ -147,8 +147,8 @@ export default function SaleModal({
   const showReference = paymentMethod !== 'cash'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center bg-black/50">
+      <div className="bg-white w-full md:max-w-lg md:mx-4 md:rounded-lg rounded-t-lg shadow-xl flex flex-col max-h-[90dvh] overflow-y-auto">
         {/* Header */}
         <div className="px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
           <div>

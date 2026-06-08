@@ -51,7 +51,7 @@ export default function ConversationList({
 
   return (
     <div
-      className="w-80 flex-shrink-0 flex flex-col border-r"
+      className={`flex-shrink-0 flex flex-col border-r w-full md:w-80 ${selectedId ? 'hidden md:flex' : 'flex'}`}
       style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}
     >
       {/* Filtros */}

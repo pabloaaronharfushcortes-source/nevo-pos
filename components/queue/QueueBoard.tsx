@@ -89,7 +89,7 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 py-3 bg-white border-b">
+      <div className="flex items-center gap-4 px-3 md:px-6 py-3 bg-white border-b">
         <div className="flex items-center gap-3 flex-1 flex-wrap">
           {STATUS_ORDER.map(s => (
             <span key={s} className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_CONFIG[s]?.badge ?? ''}`}>
@@ -107,7 +107,7 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
       </div>
 
       {/* Board */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4">
         {loading && tickets.length === 0 ? (
           <SkeletonList rows={5} />
         ) : error && tickets.length === 0 ? (

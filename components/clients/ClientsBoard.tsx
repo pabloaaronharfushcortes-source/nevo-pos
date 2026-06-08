@@ -111,22 +111,23 @@ export default function ClientsBoard({ barbers }: Props) {
   }
 
   function handleProfileUpdated(updated: Client) {
-    // Actualizar en la lista
-    setClients(prev => prev.map(c => c.id === updated.id
-      ? { ...c, ...updated }
-      : c
-    ))
-    // Actualizar el perfil en panel
+    setClients(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c))
     if (profile && profile.id === updated.id) {
       setProfile(prev => prev ? { ...prev, ...updated } : prev)
     }
   }
 
+  function handleProfileDeleted(id: string) {
+    setClients(prev => prev.filter(c => c.id !== id))
+    setSelectedId(null)
+    setProfile(null)
+  }
+
   return (
     <div className="flex h-full">
-      {/* Panel izquierdo — lista */}
+      {/* Panel izquierdo — lista. En mobile: pantalla completa cuando no hay perfil seleccionado */}
       <div
-        className="w-80 flex-shrink-0 flex flex-col border-r"
+        className={`flex-shrink-0 flex flex-col border-r ${selectedId ? 'hidden md:flex' : 'flex'} md:flex w-full md:w-80`}
         style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}
       >
         {/* Búsqueda y filtros */}
@@ -245,8 +246,8 @@ export default function ClientsBoard({ barbers }: Props) {
         </div>
       </div>
 
-      {/* Panel derecho — perfil */}
-      <div className="flex-1 overflow-hidden" style={{ background: 'var(--surface-0)' }}>
+      {/* Panel derecho — perfil. En mobile: pantalla completa cuando hay perfil seleccionado */}
+      <div className={`overflow-hidden ${selectedId ? 'flex flex-1' : 'hidden md:flex md:flex-1'}`} style={{ background: 'var(--surface-0)' }}>
         {!selectedId ? (
           <div className="flex items-center justify-center h-full flex-col gap-2" style={{ color: 'var(--ink-muted)' }}>
             <p className="font-display text-lg" style={{ color: 'var(--ink-secondary)' }}>Selecciona un cliente</p>
@@ -261,6 +262,8 @@ export default function ClientsBoard({ barbers }: Props) {
             profile={profile}
             barbers={barbers}
             onUpdated={handleProfileUpdated}
+            onDeleted={handleProfileDeleted}
+            onBack={() => { setSelectedId(null); setProfile(null) }}
           />
         ) : null}
       </div>

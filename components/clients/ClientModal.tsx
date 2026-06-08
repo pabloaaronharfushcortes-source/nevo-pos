@@ -95,9 +95,9 @@ export default function ClientModal({ barbers, client, onClose, onSaved }: Props
   const isEdit = !!client
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.75)' }}>
+    <div className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center" style={{ background: 'rgba(0,0,0,0.75)' }}>
       <div
-        className="w-full max-w-md mx-4 flex flex-col max-h-[90vh]"
+        className="w-full md:max-w-md md:mx-4 md:rounded-none rounded-t-lg flex flex-col max-h-[90dvh] overflow-y-auto"
         style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}
       >
         {/* Header */}

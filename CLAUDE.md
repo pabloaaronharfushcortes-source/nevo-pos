@@ -1,3 +1,109 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## Commands
+
+```bash
+npm run dev          # development server
+npm run build        # production build (runs tsc + Next.js build)
+npm run lint         # ESLint
+npm run test         # unit tests (vitest, run once)
+npm run test:watch   # unit tests in watch mode
+npm run test:e2e     # Playwright E2E (spins up dev server automatically)
+npm run test:tenant-isolation  # RLS/tenant isolation smoke test
+npm run seed         # seed Mercurio Barbería with realistic data
+npm run simulate     # simulate a week of operations (WhatsApp messages, walk-ins, conflicts)
+npm run preflight    # pre-deploy checklist
+npm run generate:supabase-types  # regenerate types/database.ts from live schema
+```
+
+Run a single unit test file:
+```bash
+npx vitest run lib/utils/commissions.test.ts
+```
+
+Run a single Playwright test:
+```bash
+npx playwright test tests/e2e/login.spec.ts
+```
+
+---
+
+## Architecture
+
+### Request / Auth flow
+
+Every authenticated route handler follows the same pattern:
+
+```
+getSessionUser()          → returns { id, email, tenantId, role, name } or null
+  ↓ null → err('No autorizado', 401)
+Zod validation (readJsonBody / searchParamsToObject + schema.safeParse)
+  ↓ failure → err('Datos inválidos', 400, parsed.error.flatten())
+createClient()            → RLS-scoped Supabase client (uses anon key + session cookie)
+  ↓ all queries auto-filtered by tenant_id via RLS policy "tenant_isolation"
+ok(data) / err(msg, status)
+```
+
+`getSessionUser()` lives in `lib/supabase/auth.ts`. It calls `supabase.auth.getUser()` (never `getSession()`), then joins `users` to pull `tenant_id` and `role`.
+
+The middleware (`middleware.ts` → `lib/supabase/middleware.ts`) refreshes the session cookie on every request and redirects unauthenticated users to `/login`. Public routes: `/login`, `/verify-otp`, `/display`, `/api/auth/*`, `/api/webhooks/whatsapp`.
+
+### Validation layer
+
+All Zod schemas live in `lib/validation/`. Each route imports its schema from there. Helpers:
+- `readJsonBody(request)` — safe JSON parse (returns `undefined` on failure so Zod rejects with 400, not 500)
+- `searchParamsToObject(url)` — converts URL search params to plain object for GET query validation
+- `idParamSchema` — reusable `{ id: z.string().uuid() }` for dynamic route segments
+
+### API response format
+
+`lib/utils/api-response.ts` exports two helpers used by every route handler:
+- `ok(data, status?)` → `{ ok: true, data }`
+- `err(message, status, details?)` → `{ ok: false, error, details? }`
+
+Internal errors log to console but never expose stack traces to the client.
+
+### Supabase clients
+
+- `lib/supabase/client.ts` — browser client (anon key, for client components)
+- `lib/supabase/server.ts` — server client (anon key + cookie session, for Route Handlers and Server Components); also exports `createServiceClient()` which uses `SUPABASE_SERVICE_ROLE_KEY` for admin ops (scripts and webhook only)
+- `lib/supabase/middleware.ts` — session refresh helper called by `middleware.ts`
+
+### WhatsApp agent pipeline
+
+`POST /api/webhooks/whatsapp`:
+1. Verify `X-Hub-Signature-256` → 401 if invalid
+2. Rate-limit by sender phone (`lib/whatsapp/rate-limit.ts`)
+3. Parse via `lib/whatsapp/receive.ts`
+4. Look up tenant by `phone_number_id`
+5. Branch on `conversation.mode`:
+   - `'human'` → increment `unread_human_count`, emit Realtime, return 200 (no Claude call)
+   - `'agent'` → optionally transcribe audio (Whisper), call `processAgentMessage()` in `lib/whatsapp/process.ts`, which calls `buildAgentResponse()` → Claude, parses `[ESCALATE]` tag and `<APPOINTMENT>…</APPOINTMENT>` block
+6. Persist inbound + outbound messages; update conversation
+
+### Realtime
+
+`hooks/useRealtime.ts` wraps Supabase Realtime with a generic hook. Feature hooks (`useQueue.ts`, `useConversations.ts`) build on top of it. The `/display` page (`DisplayClient`) subscribes to `queue_tickets` and `appointments` changes without authentication.
+
+### Business logic utilities
+
+| File | Purpose |
+|---|---|
+| `lib/utils/queue.ts` | `assignQueueTicket()` — finds earliest free slot across barbers |
+| `lib/utils/slots.ts` | `computeFreeSlots()` / `getBarberAvailability()` — slot calculation with buffer |
+| `lib/utils/commissions.ts` | `calculateCommission()` — called automatically when a sale is created |
+| `lib/utils/clients.ts` | `upsertClient()` — find-or-create by WhatsApp ID |
+
+### Database migrations
+
+Migrations are in `supabase/migrations/` and run in filename order. Every table with `tenant_id` has an RLS policy `"tenant_isolation"` using `auth.jwt() ->> 'tenant_id'`. The custom JWT claim is set by the auth hook in migration `20260601000001`.
+
+---
+
 # NEVO-POS — CLAUDE.md
 > Documento maestro del proyecto. Léelo completo antes de escribir cualquier línea de código. Actualízalo cuando cambien decisiones de arquitectura.
 

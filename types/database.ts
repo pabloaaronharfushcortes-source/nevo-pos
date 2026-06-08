@@ -232,6 +232,7 @@ export type Database = {
         Row: {
           classification: string
           created_at: string
+          deleted_at: string | null
           email: string | null
           id: string
           last_visit_at: string | null
@@ -247,6 +248,7 @@ export type Database = {
         Insert: {
           classification?: string
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           id?: string
           last_visit_at?: string | null
@@ -262,6 +264,7 @@ export type Database = {
         Update: {
           classification?: string
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           id?: string
           last_visit_at?: string | null

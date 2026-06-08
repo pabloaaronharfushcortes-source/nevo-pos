@@ -3,11 +3,15 @@
 import { useState } from 'react'
 import type { Barber, Client, ClientWithProfile, VisitEntry } from '@/types/app'
 import ClientModal from './ClientModal'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import { toast } from '@/hooks/useToast'
 
 type Props = {
   profile: ClientWithProfile
   barbers: Barber[]
   onUpdated: (client: Client) => void
+  onDeleted?: (id: string) => void
+  onBack?: () => void
 }
 
 // Clase de badge industrial por clasificación — definida en globals.css
@@ -121,8 +125,25 @@ function VisitRow({ entry }: { entry: VisitEntry }) {
   )
 }
 
-export default function ClientProfilePanel({ profile, barbers, onUpdated }: Props) {
+export default function ClientProfilePanel({ profile, barbers, onUpdated, onDeleted, onBack }: Props) {
   const [showEdit, setShowEdit] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/clients/${profile.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      toast.success('Cliente eliminado')
+      onDeleted?.(profile.id)
+    } catch {
+      toast.error('Algo salió mal. Intenta de nuevo.')
+    } finally {
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
 
   const lastVisit = profile.last_visit_at
     ? new Date(profile.last_visit_at).toLocaleDateString('es-MX', {
@@ -134,9 +155,18 @@ export default function ClientProfilePanel({ profile, barbers, onUpdated }: Prop
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Header */}
       <div
-        className="px-6 py-5 flex-shrink-0 border-b"
+        className="px-4 md:px-6 py-4 md:py-5 flex-shrink-0 border-b"
         style={{ background: 'var(--surface-1)', borderColor: 'var(--border-subtle)' }}
       >
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="md:hidden flex items-center gap-1 text-xs uppercase tracking-wide mb-3 transition-opacity hover:opacity-70"
+            style={{ color: 'var(--ink-muted)' }}
+          >
+            ← Volver
+          </button>
+        )}
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -154,15 +184,27 @@ export default function ClientProfilePanel({ profile, barbers, onUpdated }: Prop
               )}
             </div>
           </div>
-          <button
-            onClick={() => setShowEdit(true)}
-            className="text-xs uppercase tracking-wide px-3 py-1.5 transition-colors flex-shrink-0"
-            style={{ border: '1px solid var(--border-default)', color: 'var(--ink-secondary)' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
-          >
-            Editar
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowEdit(true)}
+              className="text-xs uppercase tracking-wide px-3 py-1.5 transition-colors"
+              style={{ border: '1px solid var(--border-default)', color: 'var(--ink-secondary)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)' }}
+            >
+              Editar
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleting}
+              className="text-xs uppercase tracking-wide px-3 py-1.5 transition-colors disabled:opacity-40"
+              style={{ border: '1px solid #7f1d1d', color: '#E05252' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(224,82,82,0.08)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+            >
+              Eliminar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -241,6 +283,16 @@ export default function ClientProfilePanel({ profile, barbers, onUpdated }: Prop
           }}
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmDelete}
+        title="Eliminar cliente"
+        description={`¿Seguro que quieres eliminar a ${profile.name}? Esta acción no se puede deshacer.`}
+        confirmLabel="Sí, eliminar cliente"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }

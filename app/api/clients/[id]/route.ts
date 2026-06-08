@@ -3,8 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
 import { computeClassification } from '@/lib/utils/clients'
 import { updateClientSchema } from '@/lib/validation/clients'
-import { readJsonBody } from '@/lib/validation'
-import { err } from '@/lib/utils/api-response'
+import { readJsonBody, idParamSchema } from '@/lib/validation'
+import { err, ok } from '@/lib/utils/api-response'
 import type { Database } from '@/types/database'
 import type { VisitEntry } from '@/types/app'
 
@@ -14,6 +14,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const parsedParams = idParamSchema.safeParse(params)
+  if (!parsedParams.success) return err('ID inválido', 400)
+
   try {
     const user = await getSessionUser()
     if (!user) return err('No autorizado', 401)
@@ -27,7 +30,7 @@ export async function GET(
           *,
           preferred_barber:barbers(id, name)
         `)
-        .eq('id', params.id)
+        .eq('id', parsedParams.data.id)
         .eq('tenant_id', user.tenantId)
         .single(),
 
@@ -38,7 +41,7 @@ export async function GET(
           barber:barbers(name),
           service:services(name, price)
         `)
-        .eq('client_id', params.id)
+        .eq('client_id', parsedParams.data.id)
         .eq('tenant_id', user.tenantId)
         .in('status', ['completed', 'no_show', 'cancelled', 'confirmed', 'pending'])
         .order('starts_at', { ascending: false })
@@ -51,7 +54,7 @@ export async function GET(
           barber:barbers(name),
           items:sale_items(name)
         `)
-        .eq('client_id', params.id)
+        .eq('client_id', parsedParams.data.id)
         .eq('tenant_id', user.tenantId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
@@ -100,6 +103,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const parsedParams = idParamSchema.safeParse(params)
+  if (!parsedParams.success) return err('ID inválido', 400)
+
   try {
     const user = await getSessionUser()
     if (!user) return err('No autorizado', 401)
@@ -112,11 +118,10 @@ export async function PATCH(
 
     const supabase = await createClient()
 
-    // Verificar que el cliente existe y pertenece al tenant
     const { data: existing } = await supabase
       .from('clients')
       .select('id, loyalty_stamps')
-      .eq('id', params.id)
+      .eq('id', parsedParams.data.id)
       .eq('tenant_id', user.tenantId)
       .single()
 
@@ -140,7 +145,7 @@ export async function PATCH(
     const { data, error } = await supabase
       .from('clients')
       .update(update)
-      .eq('id', params.id)
+      .eq('id', parsedParams.data.id)
       .eq('tenant_id', user.tenantId)
       .select('*')
       .single()
@@ -155,6 +160,44 @@ export async function PATCH(
     return NextResponse.json(data)
   } catch (error) {
     console.error('[api/clients/[id] PATCH]', error)
+    return err('Error interno del servidor', 500)
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const parsedParams = idParamSchema.safeParse(params)
+  if (!parsedParams.success) return err('ID inválido', 400)
+
+  try {
+    const user = await getSessionUser()
+    if (!user) return err('No autorizado', 401)
+
+    const supabase = await createClient()
+
+    const { data: existing } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('id', parsedParams.data.id)
+      .eq('tenant_id', user.tenantId)
+      .single()
+
+    if (!existing) return err('Cliente no encontrado', 404)
+
+    // Soft delete — nunca DELETE físico (CLAUDE.md §11 regla 8)
+    const { error } = await supabase
+      .from('clients')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', parsedParams.data.id)
+      .eq('tenant_id', user.tenantId)
+
+    if (error) throw error
+
+    return ok({ deleted: true })
+  } catch (error) {
+    console.error('[api/clients/[id] DELETE]', error)
     return err('Error interno del servidor', 500)
   }
 }

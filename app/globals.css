@@ -78,6 +78,47 @@ body {
   outline-offset: 1px;
 }
 
+/* ─── Microinteracciones: botones ─── */
+/* Transición base de 150ms en todos los botones */
+button, [role="button"] {
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* Estado active — feedback táctil inmediato */
+button:active:not(:disabled), [role="button"]:active:not([aria-disabled="true"]) {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+/* Los botones con spin (loading) no aplican transform */
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* ─── Microinteracciones: links de nav ─── */
+a {
+  transition: color 150ms ease-out, opacity 150ms ease-out;
+}
+
+/* ─── Microinteracciones: inputs ─── */
+input, textarea, select {
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+/* ─── Animación de entrada para el drawer mobile ─── */
+.drawer-enter {
+  animation: drawerIn 200ms ease-out;
+}
+
+/* ─── Animación slide-up para bottom sheets en mobile ─── */
+@media (max-width: 767px) {
+  [role="dialog"] {
+    animation: slideUp 200ms ease-out;
+  }
+}
+
 /* ─── Utilities de diseño ─── */
 @layer utilities {
   .text-balance { text-wrap: balance; }

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
 import { err } from '@/lib/utils/api-response'
+import { idParamSchema } from '@/lib/validation'
 
 const CONVERSATION_SELECT = `
   id, tenant_id, client_id, whatsapp_id, mode,
@@ -15,6 +16,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const parsedParams = idParamSchema.safeParse(params)
+  if (!parsedParams.success) return err('ID inválido', 400)
+
   try {
     const user = await getSessionUser()
     if (!user) return err('No autorizado', 401)
@@ -24,7 +28,7 @@ export async function GET(
     const { data: conversation, error } = await supabase
       .from('conversations')
       .select(CONVERSATION_SELECT)
-      .eq('id', params.id)
+      .eq('id', parsedParams.data.id)
       .eq('tenant_id', user.tenantId)
       .single()
 
@@ -35,7 +39,7 @@ export async function GET(
     const { data: messages, error: msgError } = await supabase
       .from('messages')
       .select('*')
-      .eq('conversation_id', params.id)
+      .eq('conversation_id', parsedParams.data.id)
       .order('created_at', { ascending: true })
       .limit(200)
 
@@ -46,7 +50,7 @@ export async function GET(
       await supabase
         .from('conversations')
         .update({ unread_human_count: 0 })
-        .eq('id', params.id)
+        .eq('id', parsedParams.data.id)
         .eq('tenant_id', user.tenantId)
       conversation.unread_human_count = 0
     }

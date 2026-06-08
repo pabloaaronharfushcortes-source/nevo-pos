@@ -108,10 +108,10 @@ export default function NewTicketModal({ barbers, services, onClose, onCreated }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center bg-black/50"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+      <div className="bg-white w-full md:max-w-sm md:rounded-xl rounded-t-xl shadow-xl max-h-[90dvh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">Nueva ficha</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>

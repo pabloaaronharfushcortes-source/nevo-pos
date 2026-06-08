@@ -2,14 +2,18 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { err } from '@/lib/utils/api-response'
 import type { DisplayTicket } from '@/types/app'
+import { z } from 'zod'
+import { searchParamsToObject } from '@/lib/validation'
+
+const displayQuerySchema = z.object({
+  tenant: z.string().min(1, 'Parámetro tenant requerido'),
+})
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const tenantSlug = searchParams.get('tenant')
+  const parsed = displayQuerySchema.safeParse(searchParamsToObject(request.url))
+  if (!parsed.success) return err('Parámetro tenant requerido', 400)
+  const { tenant: tenantSlug } = parsed.data
 
-  if (!tenantSlug) {
-    return err('Parámetro tenant requerido', 400)
-  }
 
   try {
     const supabase = createServiceClient()
