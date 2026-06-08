@@ -6,6 +6,7 @@ import type { Barber, Service, QueueTicketWithRelations } from '@/types/app'
 import { useQueue } from '@/hooks/useQueue'
 import NewTicketModal from './NewTicketModal'
 import SaleModal from '@/components/pos/SaleModal'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -19,7 +20,10 @@ type Props = {
 
 type StatusConfig = {
   label: string
-  badge: string
+  badgeBg: string
+  badgeText: string
+  cardBg: string
+  cardBorder: string
   nextStatus: string
   nextLabel: string
 }
@@ -27,25 +31,45 @@ type StatusConfig = {
 const STATUS_CONFIG: Record<string, StatusConfig> = {
   waiting: {
     label: 'En espera',
-    badge: 'bg-blue-100 text-blue-700',
+    badgeBg: '#F0E6FF',
+    badgeText: '#8B3FFF',
+    cardBg: '#FFFFFF',
+    cardBorder: '#EDEDED',
     nextStatus: 'called',
     nextLabel: 'Llamar',
   },
   called: {
     label: 'Llamado',
-    badge: 'bg-amber-100 text-amber-700',
+    badgeBg: '#FFE8E8',
+    badgeText: '#E85555',
+    cardBg: '#FFF6F6',
+    cardBorder: '#FFD9D9',
     nextStatus: 'in_progress',
     nextLabel: 'Pasar',
   },
   in_progress: {
     label: 'En progreso',
-    badge: 'bg-orange-100 text-orange-700',
+    badgeBg: '#D7F8F2',
+    badgeText: '#0F9B8A',
+    cardBg: '#F4FBFA',
+    cardBorder: '#BFEEE6',
     nextStatus: 'completed',
     nextLabel: 'Completar',
   },
 }
 
 const STATUS_ORDER = ['waiting', 'called', 'in_progress']
+
+// Estimación de espera para fichas en cola (relativo a ahora)
+function waitLabel(ticket: QueueTicketWithRelations): string | null {
+  if (ticket.status !== 'waiting') return null
+  const mins = Math.round((new Date(ticket.estimated_start_at).getTime() - Date.now()) / 60_000)
+  if (mins <= 0) return 'Disponible ahora'
+  if (mins < 60) return `~${mins} min de espera`
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return m > 0 ? `~${h}h ${m}m de espera` : `~${h}h de espera`
+}
 
 type SaleContext = {
   ticketId: string
@@ -89,18 +113,31 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-4 px-3 md:px-6 py-3 bg-white border-b">
+      <div
+        className="flex items-center gap-4 px-3 md:px-6 py-3 border-b"
+        style={{ background: '#FFFFFF', borderColor: '#EDEDED' }}
+      >
         <div className="flex items-center gap-3 flex-1 flex-wrap">
-          {STATUS_ORDER.map(s => (
-            <span key={s} className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_CONFIG[s]?.badge ?? ''}`}>
-              {STATUS_CONFIG[s]?.label}: {counts[s as keyof typeof counts]}
-            </span>
-          ))}
-          {loading && <span className="text-xs text-gray-400">Actualizando…</span>}
+          {STATUS_ORDER.map(s => {
+            const cfg = STATUS_CONFIG[s]
+            return (
+              <span
+                key={s}
+                className="px-2.5 py-1 rounded-full text-xs font-medium"
+                style={{ background: cfg.badgeBg, color: cfg.badgeText }}
+              >
+                {cfg.label}: {counts[s as keyof typeof counts]}
+              </span>
+            )
+          })}
+          {loading && <span className="text-xs" style={{ color: '#9B9BB0' }}>Actualizando…</span>}
         </div>
         <button
           onClick={() => setShowNewModal(true)}
-          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
+          className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
+          style={{ background: '#FF6B6B' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
         >
           + Nueva ficha
         </button>
@@ -128,33 +165,45 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
                 .map(ticket => {
                   const cfg = STATUS_CONFIG[ticket.status]
                   const isActioning = actionLoading === ticket.id
+                  const wait = waitLabel(ticket)
 
                   return (
                     <div
                       key={ticket.id}
-                      className={`flex items-center gap-4 p-4 rounded-lg border bg-white ${
-                        ticket.status === 'called' ? 'border-amber-200 bg-amber-50' :
-                        ticket.status === 'in_progress' ? 'border-orange-200 bg-orange-50' :
-                        'border-gray-200'
-                      }`}
+                      className="flex items-center gap-4 p-4 rounded-xl border-[1.5px]"
+                      style={{ background: cfg?.cardBg ?? '#FFFFFF', borderColor: cfg?.cardBorder ?? '#EDEDED' }}
                     >
                       {/* Número */}
-                      <span className="text-3xl font-bold tabular-nums text-gray-900 w-12 text-center">
+                      <span
+                        className="text-3xl font-bold tabular-nums w-12 text-center flex-shrink-0"
+                        style={{ color: '#0E0D1A' }}
+                      >
                         {String(ticket.ticket_number).padStart(2, '0')}
                       </span>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cfg?.badge ?? ''}`}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className="px-2 py-0.5 rounded-full text-xs font-medium"
+                            style={{ background: cfg?.badgeBg, color: cfg?.badgeText }}
+                          >
                             {cfg?.label}
                           </span>
-                          <span className="text-xs text-gray-400">{ticket.source}</span>
+                          <span className="text-xs" style={{ color: '#9B9BB0' }}>{ticket.source}</span>
+                          {wait && (
+                            <span
+                              className="px-2 py-0.5 rounded-full text-[11px] font-medium"
+                              style={{ background: '#F5F5F7', color: '#6B6B8A' }}
+                            >
+                              {wait}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-sm font-medium text-gray-900 mt-0.5">
+                        <p className="text-sm font-medium mt-1" style={{ color: '#0E0D1A' }}>
                           {ticket.client?.name ?? 'Walk-in anónimo'}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs mt-0.5" style={{ color: '#6B6B8A' }}>
                           {ticket.barber?.name ?? '—'}
                           {ticket.service && ` · ${ticket.service.name}`}
                           {' · '}
@@ -184,47 +233,35 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
                               })
                             }}
                             disabled={!!actionLoading}
-                            className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                            className="px-3 py-1.5 text-xs font-medium text-white rounded-lg disabled:opacity-50 transition-colors"
+                            style={{ background: '#FF6B6B' }}
+                            onMouseEnter={e => { if (!actionLoading) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+                            onMouseLeave={e => { if (!actionLoading) (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
                           >
                             Cobrar
                           </button>
                         )}
-                        {confirmCancelId === ticket.id ? (
-                          <>
-                            <span className="text-xs text-gray-500">¿Cancelar?</span>
-                            <button
-                              onClick={() => updateStatus(ticket.id, 'cancelled')}
-                              disabled={isActioning}
-                              className="px-2.5 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-                            >
-                              Sí
-                            </button>
-                            <button
-                              onClick={() => setConfirmCancelId(null)}
-                              className="px-2.5 py-1.5 text-xs border border-gray-300 rounded hover:bg-gray-50"
-                            >
-                              No
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {cfg && (
-                              <button
-                                onClick={() => updateStatus(ticket.id, cfg.nextStatus)}
-                                disabled={isActioning}
-                                className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded hover:bg-gray-700 disabled:opacity-50 transition-colors"
-                              >
-                                {isActioning ? '…' : cfg.nextLabel}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => setConfirmCancelId(ticket.id)}
-                              className="px-2.5 py-1.5 text-xs text-red-500 border border-red-200 rounded hover:bg-red-50"
-                            >
-                              Cancelar
-                            </button>
-                          </>
+                        {cfg && (
+                          <button
+                            onClick={() => updateStatus(ticket.id, cfg.nextStatus)}
+                            disabled={isActioning}
+                            className="px-3 py-1.5 text-xs font-medium text-white rounded-lg disabled:opacity-50 transition-colors"
+                            style={{ background: '#A259FF' }}
+                            onMouseEnter={e => { if (!isActioning) (e.currentTarget as HTMLElement).style.background = '#8B3FFF' }}
+                            onMouseLeave={e => { if (!isActioning) (e.currentTarget as HTMLElement).style.background = '#A259FF' }}
+                          >
+                            {isActioning ? '…' : cfg.nextLabel}
+                          </button>
                         )}
+                        <button
+                          onClick={() => setConfirmCancelId(ticket.id)}
+                          className="px-2.5 py-1.5 text-xs font-medium rounded-lg border-[1.5px] transition-colors"
+                          style={{ color: '#E85555', borderColor: '#FFD9D9' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FFF0F0' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                        >
+                          Cancelar
+                        </button>
                       </div>
                     </div>
                   )
@@ -266,6 +303,17 @@ export default function QueueBoard({ tenantId, initialTickets, barbers, services
           }}
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmCancelId !== null}
+        title="Cancelar ficha"
+        description="La ficha saldrá de la cola. Esta acción no se puede deshacer."
+        confirmLabel="Sí, cancelar ficha"
+        cancelLabel="No"
+        variant="danger"
+        onConfirm={() => { if (confirmCancelId) updateStatus(confirmCancelId, 'cancelled') }}
+        onCancel={() => setConfirmCancelId(null)}
+      />
     </div>
   )
 }

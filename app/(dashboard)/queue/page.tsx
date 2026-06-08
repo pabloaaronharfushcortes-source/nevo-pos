@@ -40,8 +40,9 @@ export default async function QueuePage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-4 bg-white border-b flex-shrink-0">
-        <h1 className="text-xl font-semibold text-gray-900">Cola</h1>
+      <div className="px-6 py-4 border-b flex-shrink-0" style={{ background: '#FFFFFF', borderColor: '#EDEDED' }}>
+        <h1 className="font-display text-2xl font-semibold" style={{ color: '#0E0D1A' }}>Cola</h1>
+        <p className="text-sm mt-0.5" style={{ color: '#6B6B8A' }}>Fichas activas del día · walk-ins y citas en curso</p>
       </div>
       <div className="flex-1 min-h-0">
         <QueueBoard

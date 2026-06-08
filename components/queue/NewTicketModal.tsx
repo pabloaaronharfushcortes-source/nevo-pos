@@ -103,24 +103,31 @@ export default function NewTicketModal({ barbers, services, onClose, onCreated }
     }
   }
 
-  const inputClass = 'block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500'
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
+  const inputClass = 'block w-full rounded-lg border-[1.5px] border-[#EDEDED] bg-[#FAFAFA] px-3 py-2.5 text-sm text-[#0E0D1A] focus:border-[#A259FF] focus:outline-none focus:ring-0 transition-colors'
+  const labelClass = 'block text-sm font-medium mb-1'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center"
+      style={{ background: 'rgba(14,13,26,0.40)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-white w-full md:max-w-sm md:rounded-xl rounded-t-xl shadow-xl max-h-[90dvh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Nueva ficha</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+      <div className="bg-white w-full md:max-w-sm md:rounded-2xl rounded-t-2xl shadow-xl max-h-[90dvh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: '#EDEDED' }}>
+          <h2 className="font-display text-xl font-semibold" style={{ color: '#0E0D1A' }}>Nueva ficha</h2>
+          <button
+            onClick={onClose}
+            className="text-xl leading-none transition-colors"
+            style={{ color: '#9B9BB0' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#0E0D1A' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#9B9BB0' }}
+          >×</button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           {/* Cliente (opcional) */}
           <div className="relative">
-            <label className={labelClass}>Cliente <span className="text-gray-400 font-normal">(opcional)</span></label>
+            <label className={labelClass} style={{ color: '#0E0D1A' }}>Cliente <span className="font-normal" style={{ color: '#9B9BB0' }}>(opcional)</span></label>
             <input
               type="text"
               value={clientSearch}
@@ -132,18 +139,20 @@ export default function NewTicketModal({ barbers, services, onClose, onCreated }
               autoComplete="off"
             />
             {selectedClient && (
-              <p className="mt-1 text-xs text-green-600">Seleccionado: {selectedClient.name}</p>
+              <p className="mt-1 text-xs font-medium" style={{ color: '#8B3FFF' }}>Seleccionado: {selectedClient.name}</p>
             )}
             {showClientDropdown && (
-              <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
+              <ul className="absolute z-10 mt-1 w-full bg-white border-[1.5px] rounded-lg shadow-lg max-h-40 overflow-y-auto" style={{ borderColor: '#EDEDED' }}>
                 {clientResults.map(c => (
                   <li key={c.id}>
                     <button
                       onMouseDown={() => selectClient(c)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                      className="w-full text-left px-3 py-2 text-sm transition-colors"
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F5EEFF' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                     >
-                      <span className="font-medium">{c.name}</span>
-                      {c.phone && <span className="text-gray-400 ml-2 text-xs">{c.phone}</span>}
+                      <span className="font-medium" style={{ color: '#0E0D1A' }}>{c.name}</span>
+                      {c.phone && <span className="ml-2 text-xs" style={{ color: '#9B9BB0' }}>{c.phone}</span>}
                     </button>
                   </li>
                 ))}
@@ -153,7 +162,7 @@ export default function NewTicketModal({ barbers, services, onClose, onCreated }
 
           {/* Barbero (opcional) */}
           <div>
-            <label className={labelClass}>Barbero <span className="text-gray-400 font-normal">(el sistema asigna si no se elige)</span></label>
+            <label className={labelClass} style={{ color: '#0E0D1A' }}>Barbero <span className="font-normal" style={{ color: '#9B9BB0' }}>(el sistema asigna si no se elige)</span></label>
             <select value={selectedBarberId} onChange={e => setSelectedBarberId(e.target.value)} className={inputClass}>
               <option value="">Asignar automáticamente</option>
               {barbers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -162,7 +171,7 @@ export default function NewTicketModal({ barbers, services, onClose, onCreated }
 
           {/* Servicio (opcional) */}
           <div>
-            <label className={labelClass}>Servicio <span className="text-gray-400 font-normal">(opcional)</span></label>
+            <label className={labelClass} style={{ color: '#0E0D1A' }}>Servicio <span className="font-normal" style={{ color: '#9B9BB0' }}>(opcional)</span></label>
             <select value={selectedServiceId} onChange={e => setSelectedServiceId(e.target.value)} className={inputClass}>
               <option value="">Sin especificar (45 min)</option>
               {services.map(s => (
@@ -172,18 +181,27 @@ export default function NewTicketModal({ barbers, services, onClose, onCreated }
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">{error}</p>
+            <p className="text-sm px-3 py-2 rounded-lg" style={{ color: '#E85555', background: '#FFF0F0' }}>{error}</p>
           )}
         </div>
 
-        <div className="px-6 py-4 border-t flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+        <div className="px-6 py-4 border-t flex justify-end gap-3" style={{ borderColor: '#EDEDED' }}>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium rounded-lg border-[1.5px] transition-colors"
+            style={{ color: '#6B6B8A', borderColor: '#EDEDED' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FAFAFA' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+          >
             Cancelar
           </button>
           <button
             onClick={handleCreate}
             disabled={saving}
-            className="px-4 py-2 text-sm bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50 transition-colors"
+            style={{ background: '#FF6B6B' }}
+            onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+            onMouseLeave={e => { if (!saving) (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
           >
             {saving ? 'Asignando…' : 'Crear ficha'}
           </button>
