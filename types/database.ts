@@ -589,6 +589,7 @@ export type Database = {
           queue_ticket_id: string | null
           subtotal: number
           tenant_id: string
+          tip: number
           total: number
         }
         Insert: {
@@ -607,6 +608,7 @@ export type Database = {
           queue_ticket_id?: string | null
           subtotal: number
           tenant_id: string
+          tip?: number
           total: number
         }
         Update: {
@@ -625,6 +627,7 @@ export type Database = {
           queue_ticket_id?: string | null
           subtotal?: number
           tenant_id?: string
+          tip?: number
           total?: number
         }
         Relationships: [

@@ -14,6 +14,7 @@ export const createSaleSchema = z.object({
   barberId: z.string().uuid(),
   items: z.array(saleItemSchema).min(1, 'Se requiere al menos un artículo'),
   discount: z.number().nonnegative().optional(),
+  tip: z.number().nonnegative().optional(),
   paymentMethod: z.enum(PAYMENT_METHODS),
   paymentReference: z.string().optional(),
   notes: z.string().optional(),

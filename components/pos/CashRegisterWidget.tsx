@@ -83,7 +83,15 @@ export default function CashRegisterWidget({ activeRegister, onOpened, onClosed 
       setShowCloseForm(false)
       setClosingAmount('')
       setFormNotes('')
-      toast.success('Turno de caja cerrado')
+      // Mostrar la diferencia de caja calculada (sobrante / faltante / cuadró)
+      const diff = data.difference ?? 0
+      if (diff === 0) {
+        toast.success('Turno cerrado · la caja cuadró exactamente')
+      } else if (diff > 0) {
+        toast.success(`Turno cerrado · sobrante de $${diff.toFixed(2)}`)
+      } else {
+        toast.error(`Turno cerrado · faltante de $${Math.abs(diff).toFixed(2)}`)
+      }
       onClosed(data)
     } catch {
       setError('Error de conexión')
@@ -217,7 +225,10 @@ export default function CashRegisterWidget({ activeRegister, onOpened, onClosed 
           <button
             onClick={handleOpen}
             disabled={loading}
-            className="px-4 py-1.5 bg-gray-900 text-white rounded text-sm hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            className="px-4 py-1.5 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+            style={{ background: '#FF6B6B' }}
+            onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+            onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
           >
             {loading ? 'Abriendo…' : 'Confirmar apertura'}
           </button>

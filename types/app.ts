@@ -121,6 +121,7 @@ export type SaleWithRelations = {
   cash_register_id: string | null
   subtotal: number
   discount: number
+  tip: number
   total: number
   payment_method: string
   payment_reference: string | null

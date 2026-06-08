@@ -14,7 +14,7 @@ type CommissionInsert = Database['public']['Tables']['commissions']['Insert']
 
 const SALE_SELECT = `
   id, tenant_id, appointment_id, queue_ticket_id, client_id, barber_id, cashier_id,
-  cash_register_id, subtotal, discount, total, payment_method, payment_reference,
+  cash_register_id, subtotal, discount, tip, total, payment_method, payment_reference,
   notes, created_at, deleted_at,
   client:clients(id, name),
   barber:barbers(id, name),
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     barberId,
     items,
     discount = 0,
+    tip = 0,
     paymentMethod,
     paymentReference,
     notes,
@@ -81,7 +82,10 @@ export async function POST(request: NextRequest) {
   if (!barber) return err('Barbero no encontrado', 404)
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100)
+  // Base de servicio (sin propina): sirve de base para comisión y gasto del cliente
+  const serviceTotal = Math.max(0, Math.round((subtotal - discount) * 100) / 100)
+  // La propina se suma al total cobrado pero NO entra en la comisión
+  const total = Math.round((serviceTotal + tip) * 100) / 100
 
   const saleInsert: SaleInsert = {
     tenant_id: user.tenantId,
@@ -93,6 +97,7 @@ export async function POST(request: NextRequest) {
     cash_register_id: cashRegisterId ?? null,
     subtotal,
     discount,
+    tip,
     total,
     payment_method: paymentMethod,
     payment_reference: paymentReference ?? null,
@@ -127,7 +132,7 @@ export async function POST(request: NextRequest) {
     tenant_id: user.tenantId,
     barber_id: barberId,
     sale_id: sale.id,
-    amount: computeCommission(total, barber.commission_rate),
+    amount: computeCommission(serviceTotal, barber.commission_rate),
     rate: barber.commission_rate,
     period_start: quincena.period_start,
     period_end: quincena.period_end,
@@ -136,8 +141,9 @@ export async function POST(request: NextRequest) {
   await supabase.from('commissions').insert(commissionInsert)
 
   // Actualizar estadísticas del cliente (stamps, total_spent, clasificación)
+  // Se usa el total de servicio (sin propina) como gasto del cliente
   if (clientId) {
-    await updateClientAfterSale(supabase, clientId, total)
+    await updateClientAfterSale(supabase, clientId, serviceTotal)
   }
 
   // Marcar ticket/cita como completado
