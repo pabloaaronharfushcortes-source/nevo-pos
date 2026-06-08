@@ -213,23 +213,27 @@ export default function AppointmentModal({
     }
   }
 
-  const inputClass = 'block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500'
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-1'
+  const inputClass = 'block w-full rounded-lg border-[1.5px] border-[#EDEDED] bg-[#FAFAFA] px-3 py-2.5 text-sm text-[#0E0D1A] focus:border-[#A259FF] focus:outline-none focus:ring-0 transition-colors'
+  const labelClass = 'block text-sm font-medium text-[#0E0D1A] mb-1.5'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex md:items-center md:justify-center items-end justify-center"
+      style={{ background: 'rgba(14,13,26,0.40)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-white w-full md:max-w-md md:rounded-xl rounded-t-xl shadow-xl relative flex flex-col max-h-[90dvh] overflow-y-auto">
+      <div className="bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl relative flex flex-col max-h-[90dvh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: '#EDEDED' }}>
+          <h2 className="font-display text-xl font-semibold" style={{ color: '#0E0D1A' }}>
             {mode === 'create' ? 'Nueva cita' : 'Editar cita'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            className="text-xl leading-none transition-colors"
+            style={{ color: '#9B9BB0' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B6B8A' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#9B9BB0' }}
             aria-label="Cerrar"
           >
             ×
@@ -253,20 +257,23 @@ export default function AppointmentModal({
                 autoComplete="off"
               />
               {selectedClient && (
-                <p className="mt-1 text-xs text-green-600">
+                <p className="mt-1 text-xs" style={{ color: '#8B3FFF' }}>
                   Cliente seleccionado — {selectedClient.classification}
                 </p>
               )}
               {showClientDropdown && (
-                <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                <ul
+                  className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg max-h-48 overflow-y-auto border-[1.5px]"
+                  style={{ borderColor: '#EDEDED' }}
+                >
                   {clientResults.map(client => (
                     <li key={client.id}>
                       <button
                         onMouseDown={() => selectClient(client)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                        className="w-full text-left px-3 py-2 text-sm transition-colors hover:bg-[#F5EEFF]"
                       >
-                        <span className="font-medium">{client.name}</span>
-                        {client.phone && <span className="text-gray-400 ml-2">{client.phone}</span>}
+                        <span className="font-medium" style={{ color: '#0E0D1A' }}>{client.name}</span>
+                        {client.phone && <span className="ml-2" style={{ color: '#9B9BB0' }}>{client.phone}</span>}
                       </button>
                     </li>
                   ))}
@@ -279,9 +286,9 @@ export default function AppointmentModal({
           {mode === 'edit' && appointment?.client && (
             <div>
               <label className={labelClass}>Cliente</label>
-              <p className="text-sm text-gray-900 px-3 py-2 bg-gray-50 rounded-md">
+              <p className="text-sm px-3 py-2.5 rounded-lg" style={{ color: '#0E0D1A', background: '#FAFAFA' }}>
                 {appointment.client.name}
-                {appointment.client.phone && <span className="text-gray-400 ml-2">{appointment.client.phone}</span>}
+                {appointment.client.phone && <span className="ml-2" style={{ color: '#9B9BB0' }}>{appointment.client.phone}</span>}
               </p>
             </div>
           )}
@@ -301,7 +308,7 @@ export default function AppointmentModal({
                 ))}
               </select>
             ) : (
-              <p className="text-sm text-gray-900 px-3 py-2 bg-gray-50 rounded-md">
+              <p className="text-sm px-3 py-2.5 rounded-lg" style={{ color: '#0E0D1A', background: '#FAFAFA' }}>
                 {appointment?.barber?.name ?? '—'}
               </p>
             )}
@@ -324,10 +331,10 @@ export default function AppointmentModal({
                 ))}
               </select>
             ) : (
-              <p className="text-sm text-gray-900 px-3 py-2 bg-gray-50 rounded-md">
+              <p className="text-sm px-3 py-2.5 rounded-lg" style={{ color: '#0E0D1A', background: '#FAFAFA' }}>
                 {appointment?.service?.name ?? '—'}
                 {appointment?.service && (
-                  <span className="text-gray-400 ml-2">
+                  <span className="ml-2" style={{ color: '#9B9BB0' }}>
                     ${appointment.service.price} · {appointment.service.duration_minutes} min
                   </span>
                 )}
@@ -347,14 +354,14 @@ export default function AppointmentModal({
                   className={inputClass}
                 />
                 {computedEndsAt && (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs" style={{ color: '#6B6B8A' }}>
                     Finaliza a las {computedEndsAt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                     {' '}({selectedService?.duration_minutes} min)
                   </p>
                 )}
               </>
             ) : (
-              <p className="text-sm text-gray-900 px-3 py-2 bg-gray-50 rounded-md">
+              <p className="text-sm px-3 py-2.5 rounded-lg" style={{ color: '#0E0D1A', background: '#FAFAFA' }}>
                 {appointment && new Date(appointment.starts_at).toLocaleString('es-MX', {
                   weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
                 })}
@@ -407,16 +414,19 @@ export default function AppointmentModal({
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">{error}</p>
+            <p className="text-sm px-3 py-2 rounded-lg" style={{ background: '#FFF0F0', color: '#E85555' }}>{error}</p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t flex items-center justify-between gap-3">
+        <div className="px-6 py-4 border-t flex items-center justify-between gap-3" style={{ borderColor: '#EDEDED' }}>
           {mode === 'edit' && appointment?.status !== 'cancelled' && (
             <button
               onClick={() => setConfirmingCancel(true)}
-              className="text-sm text-red-600 hover:text-red-700"
+              className="text-sm font-medium transition-colors"
+              style={{ color: '#E85555' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#C73E3E' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#E85555' }}
             >
               Cancelar cita
             </button>
@@ -425,14 +435,20 @@ export default function AppointmentModal({
           <div className="flex items-center gap-3 ml-auto">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium rounded-lg border-[1.5px] transition-colors"
+              style={{ borderColor: '#EDEDED', color: '#6B6B8A' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FAFAFA' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
             >
               Cerrar
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 text-sm bg-gray-900 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50 transition-colors"
+              style={{ background: '#FF6B6B' }}
+              onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLElement).style.background = '#E85555' }}
+              onMouseLeave={e => { if (!saving) (e.currentTarget as HTMLElement).style.background = '#FF6B6B' }}
             >
               {saving ? 'Guardando…' : mode === 'create' ? 'Crear cita' : 'Guardar cambios'}
             </button>

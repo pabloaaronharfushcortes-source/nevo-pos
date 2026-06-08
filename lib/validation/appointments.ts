@@ -28,11 +28,15 @@ export const createAppointmentSchema = z.object({
 })
 
 // PATCH /api/appointments/:id
+// Soporta cambios de estado/notas y reagendado (drag-drop): startsAt / barberId / serviceId
 export const updateAppointmentSchema = z
   .object({
     status: z.enum(APPOINTMENT_STATUSES).optional(),
     notes: z.string().nullable().optional(),
     cancellationReason: z.string().optional(),
+    startsAt: z.string().datetime({ offset: true }).or(z.string().min(1)).optional(),
+    barberId: z.string().uuid().optional(),
+    serviceId: z.string().uuid().optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,

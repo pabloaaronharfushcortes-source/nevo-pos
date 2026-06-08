@@ -154,6 +154,113 @@ a {
   [role="dialog"] { animation: slideUp 200ms ease-out; }
 }
 
+/* ─── FullCalendar — theming NEVO ───────────────────────────────────────────── */
+.nevo-calendar .fc {
+  --fc-border-color: #EDEDED;
+  --fc-page-bg-color: #FFFFFF;
+  --fc-neutral-bg-color: #FAFAFA;
+  --fc-today-bg-color: #FFF6F6;            /* coral muy tenue */
+  --fc-now-indicator-color: #FF6B6B;
+  --fc-button-text-color: #6B6B8A;
+  --fc-button-bg-color: #FFFFFF;
+  --fc-button-border-color: #EDEDED;
+  --fc-button-hover-bg-color: #F5EEFF;
+  --fc-button-hover-border-color: #E4D6FF;
+  --fc-button-active-bg-color: #A259FF;
+  --fc-button-active-border-color: #A259FF;
+  --fc-event-bg-color: #FF6B6B;
+  --fc-event-border-color: #FF6B6B;
+  --fc-event-text-color: #FFFFFF;
+  font-family: var(--font-inter, system-ui, sans-serif);
+}
+
+/* Título (mes / rango) en Playfair */
+.nevo-calendar .fc .fc-toolbar-title {
+  font-family: var(--font-playfair, Georgia, serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0E0D1A;
+}
+
+/* Botones de la toolbar */
+.nevo-calendar .fc .fc-button {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  box-shadow: none;
+}
+.nevo-calendar .fc .fc-button-primary:not(:disabled).fc-button-active,
+.nevo-calendar .fc .fc-button-primary:not(:disabled):active {
+  color: #FFFFFF;
+}
+.nevo-calendar .fc .fc-button:focus {
+  box-shadow: none;
+}
+.nevo-calendar .fc .fc-button-primary:disabled {
+  background: #FAFAFA;
+  border-color: #EDEDED;
+  color: #C4C4D0;
+}
+
+/* Encabezados de día */
+.nevo-calendar .fc .fc-col-header-cell-cushion {
+  color: #6B6B8A;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  padding: 8px 4px;
+}
+.nevo-calendar .fc .fc-timegrid-axis-cushion,
+.nevo-calendar .fc .fc-timegrid-slot-label-cushion {
+  color: #9B9BB0;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Día de hoy en encabezado */
+.nevo-calendar .fc .fc-day-today .fc-col-header-cell-cushion {
+  color: #FF6B6B;
+}
+
+/* Eventos: bordes redondeados, borde izquierdo de color */
+.nevo-calendar .fc .fc-event {
+  border-radius: 6px;
+  border-width: 0 0 0 3px;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.nevo-calendar .fc .fc-event:hover {
+  filter: brightness(0.97);
+}
+.nevo-calendar .fc .fc-event.fc-event-dragging,
+.nevo-calendar .fc .fc-event.fc-event-resizing {
+  box-shadow: var(--shadow-lg);
+  opacity: 0.92;
+}
+
+/* Indicador "ahora" más visible */
+.nevo-calendar .fc .fc-timegrid-now-indicator-line {
+  border-color: #FF6B6B;
+  border-width: 2px;
+}
+.nevo-calendar .fc .fc-timegrid-now-indicator-arrow {
+  border-color: #FF6B6B;
+  background: #FF6B6B;
+}
+
+/* Horario laboral fuera de turno: gris muy sutil */
+.nevo-calendar .fc .fc-non-business {
+  background: #FAFAFB;
+}
+
+/* Selección de slot (crear cita arrastrando) */
+.nevo-calendar .fc .fc-highlight {
+  background: rgba(162, 89, 255, 0.12);
+}
+
 /* ─── Utilidades NEVO ────────────────────────────────────────────────────────── */
 @layer utilities {
   .text-balance { text-wrap: balance; }
