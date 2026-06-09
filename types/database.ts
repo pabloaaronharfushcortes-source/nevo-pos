@@ -123,35 +123,95 @@ export type Database = {
           },
         ]
       }
+      barber_time_off: {
+        Row: {
+          barber_id: string
+          created_at: string
+          ends_at: string
+          id: string
+          reason: string | null
+          starts_at: string
+          tenant_id: string
+        }
+        Insert: {
+          barber_id: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          reason?: string | null
+          starts_at: string
+          tenant_id: string
+        }
+        Update: {
+          barber_id?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          reason?: string | null
+          starts_at?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_time_off_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_time_off_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       barbers: {
         Row: {
+          bio: string | null
           commission_rate: number
           created_at: string
+          email: string | null
+          hired_at: string | null
           id: string
+          instagram: string | null
           is_active: boolean
           name: string
+          phone: string | null
           photo_url: string | null
           sort_order: number
           tenant_id: string
           user_id: string | null
         }
         Insert: {
+          bio?: string | null
           commission_rate?: number
           created_at?: string
+          email?: string | null
+          hired_at?: string | null
           id?: string
+          instagram?: string | null
           is_active?: boolean
           name: string
+          phone?: string | null
           photo_url?: string | null
           sort_order?: number
           tenant_id: string
           user_id?: string | null
         }
         Update: {
+          bio?: string | null
           commission_rate?: number
           created_at?: string
+          email?: string | null
+          hired_at?: string | null
           id?: string
+          instagram?: string | null
           is_active?: boolean
           name?: string
+          phone?: string | null
           photo_url?: string | null
           sort_order?: number
           tenant_id?: string
@@ -453,6 +513,59 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          cost: number | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          sku: string | null
+          stock_minimum: number
+          stock_quantity: number
+          tenant_id: string
+          unit: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          sku?: string | null
+          stock_minimum?: number
+          stock_quantity?: number
+          tenant_id: string
+          unit?: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          sku?: string | null
+          stock_minimum?: number
+          stock_quantity?: number
+          tenant_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       queue_tickets: {
         Row: {
           barber_id: string
@@ -568,6 +681,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]

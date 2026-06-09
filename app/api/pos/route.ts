@@ -19,7 +19,7 @@ const SALE_SELECT = `
   client:clients(id, name),
   barber:barbers(id, name),
   cashier:users(id, name),
-  items:sale_items(id, type, name, price, quantity, subtotal, service_id)
+  items:sale_items(id, type, name, price, quantity, subtotal, service_id, product_id)
 ` as const
 
 export async function GET() {
@@ -82,10 +82,16 @@ export async function POST(request: NextRequest) {
   if (!barber) return err('Barbero no encontrado', 404)
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  // Base de servicio (sin propina): sirve de base para comisión y gasto del cliente
-  const serviceTotal = Math.max(0, Math.round((subtotal - discount) * 100) / 100)
+  // Subtotal solo de servicios — los productos NO entran en la base de comisión
+  const servicesSubtotal = items
+    .filter(item => item.type !== 'product')
+    .reduce((sum, item) => sum + item.price * item.quantity, 0)
+  // Total de mercancía (servicios + productos), sin propina: lo que el cliente gasta
+  const goodsTotal = Math.max(0, Math.round((subtotal - discount) * 100) / 100)
+  // Base de comisión: servicios menos descuento (el descuento se absorbe del servicio)
+  const commissionBase = Math.max(0, Math.round((servicesSubtotal - discount) * 100) / 100)
   // La propina se suma al total cobrado pero NO entra en la comisión
-  const total = Math.round((serviceTotal + tip) * 100) / 100
+  const total = Math.round((goodsTotal + tip) * 100) / 100
 
   const saleInsert: SaleInsert = {
     tenant_id: user.tenantId,
@@ -116,23 +122,52 @@ export async function POST(request: NextRequest) {
 
   const saleItemsInsert: SaleItemInsert[] = items.map(item => ({
     sale_id: sale.id,
-    type: 'service',
+    type: item.type,
     name: item.name,
     price: item.price,
     quantity: item.quantity,
     subtotal: Math.round(item.price * item.quantity * 100) / 100,
-    service_id: item.serviceId ?? null,
+    service_id: item.type === 'service' ? item.serviceId ?? null : null,
+    product_id: item.type === 'product' ? item.productId ?? null : null,
   }))
 
   const { error: itemsError } = await supabase.from('sale_items').insert(saleItemsInsert)
   if (itemsError) throw itemsError
+
+  // Descontar inventario de los productos vendidos.
+  // Agrupa por producto por si el mismo producto aparece en varias líneas.
+  const productQtyById = new Map<string, number>()
+  for (const item of items) {
+    if (item.type === 'product' && item.productId) {
+      productQtyById.set(item.productId, (productQtyById.get(item.productId) ?? 0) + item.quantity)
+    }
+  }
+  if (productQtyById.size > 0) {
+    const productIds = Array.from(productQtyById.keys())
+    const { data: stockRows } = await supabase
+      .from('products')
+      .select('id, stock_quantity')
+      .in('id', productIds)
+      .eq('tenant_id', user.tenantId)
+
+    for (const row of stockRows ?? []) {
+      const sold = productQtyById.get(row.id) ?? 0
+      const newStock = row.stock_quantity - sold
+      // No es fatal si falla un decremento — la venta ya está registrada
+      await supabase
+        .from('products')
+        .update({ stock_quantity: newStock })
+        .eq('id', row.id)
+        .eq('tenant_id', user.tenantId)
+    }
+  }
 
   const quincena = getCurrentQuincena()
   const commissionInsert: CommissionInsert = {
     tenant_id: user.tenantId,
     barber_id: barberId,
     sale_id: sale.id,
-    amount: computeCommission(serviceTotal, barber.commission_rate),
+    amount: computeCommission(commissionBase, barber.commission_rate),
     rate: barber.commission_rate,
     period_start: quincena.period_start,
     period_end: quincena.period_end,
@@ -141,9 +176,9 @@ export async function POST(request: NextRequest) {
   await supabase.from('commissions').insert(commissionInsert)
 
   // Actualizar estadísticas del cliente (stamps, total_spent, clasificación)
-  // Se usa el total de servicio (sin propina) como gasto del cliente
+  // Se usa el total de mercancía (servicios + productos, sin propina) como gasto del cliente
   if (clientId) {
-    await updateClientAfterSale(supabase, clientId, serviceTotal)
+    await updateClientAfterSale(supabase, clientId, goodsTotal)
   }
 
   // Marcar ticket/cita como completado

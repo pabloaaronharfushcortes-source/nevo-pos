@@ -6,7 +6,9 @@ export type Tenant = Tables['tenants']['Row']
 export type UserProfile = Tables['users']['Row']
 export type Barber = Tables['barbers']['Row']
 export type BarberSchedule = Tables['barber_schedules']['Row']
+export type BarberTimeOff = Tables['barber_time_off']['Row']
 export type Service = Tables['services']['Row']
+export type Product = Tables['products']['Row']
 export type Client = Tables['clients']['Row']
 export type Appointment = Tables['appointments']['Row']
 export type QueueTicket = Tables['queue_tickets']['Row']
@@ -139,6 +141,7 @@ export type SaleWithRelations = {
     quantity: number
     subtotal: number
     service_id: string | null
+    product_id: string | null
   }>
 }
 

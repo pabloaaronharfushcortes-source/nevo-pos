@@ -3,7 +3,9 @@ import { z } from 'zod'
 const PAYMENT_METHODS = ['cash', 'clip', 'getnet', 'transfer'] as const
 
 const saleItemSchema = z.object({
+  type: z.enum(['service', 'product']).default('service'),
   serviceId: z.string().uuid().optional(),
+  productId: z.string().uuid().optional(),
   name: z.string().min(1),
   price: z.number().nonnegative(),
   quantity: z.number().int().positive(),

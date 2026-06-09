@@ -92,6 +92,48 @@ export async function GET(request: NextRequest) {
 
     const totalCommissions = (commissions ?? []).reduce((acc, c) => acc + Number(c.amount), 0)
 
+    // Tendencia por día: ingreso por servicios (total − propina) y nº de ventas
+    const trendMap: Record<string, { revenue: number; count: number }> = {}
+    for (const s of rows) {
+      const day = new Date(s.created_at).toISOString().split('T')[0]
+      if (!trendMap[day]) trendMap[day] = { revenue: 0, count: 0 }
+      trendMap[day].revenue += Number(s.total) - Number(s.tip)
+      trendMap[day].count += 1
+    }
+    const dailyTrend = Object.entries(trendMap)
+      .map(([date, v]) => ({ date, revenue: v.revenue, count: v.count }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    // Artículos más vendidos (servicios y productos) — agregados desde sale_items
+    const saleIds = rows.map(s => s.id)
+    let topItems: Array<{ type: string; name: string; quantity: number; revenue: number }> = []
+    let productRevenue = 0
+    let productUnits = 0
+
+    if (saleIds.length > 0) {
+      const { data: items, error: itemsError } = await supabase
+        .from('sale_items')
+        .select('type, name, quantity, subtotal, sale_id')
+        .in('sale_id', saleIds)
+
+      if (itemsError) throw itemsError
+
+      const itemMap: Record<string, { type: string; name: string; quantity: number; revenue: number }> = {}
+      for (const it of items ?? []) {
+        const key = `${it.type}|${it.name}`
+        if (!itemMap[key]) itemMap[key] = { type: it.type, name: it.name, quantity: 0, revenue: 0 }
+        itemMap[key].quantity += Number(it.quantity)
+        itemMap[key].revenue += Number(it.subtotal)
+        if (it.type === 'product') {
+          productRevenue += Number(it.subtotal)
+          productUnits += Number(it.quantity)
+        }
+      }
+      topItems = Object.values(itemMap)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+    }
+
     return ok({
       period: { from, to },
       summary: {
@@ -103,9 +145,13 @@ export async function GET(request: NextRequest) {
         averageTicket,
         totalCommissions,
         netRevenue: serviceRevenue - totalCommissions,
+        productRevenue,
+        productUnits,
       },
       byPaymentMethod,
       byBarber: Object.values(byBarber).sort((a, b) => b.salesTotal - a.salesTotal),
+      topItems,
+      dailyTrend,
     })
   } catch (error) {
     console.error('[api/reports GET]', error)

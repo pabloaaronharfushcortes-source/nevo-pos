@@ -11,7 +11,7 @@ export default async function ClientsPage() {
 
   const { data: barbers } = await supabase
     .from('barbers')
-    .select('id, tenant_id, user_id, name, photo_url, commission_rate, is_active, sort_order, created_at')
+    .select('id, tenant_id, user_id, name, photo_url, commission_rate, is_active, sort_order, created_at, phone, email, bio, instagram, hired_at')
     .eq('tenant_id', user.tenantId)
     .eq('is_active', true)
     .order('sort_order')

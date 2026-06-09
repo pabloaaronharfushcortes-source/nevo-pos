@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -16,8 +16,11 @@ import type {
 import esLocale from '@fullcalendar/core/locales/es'
 import type { Barber, Service, AppointmentWithRelations } from '@/types/app'
 import AppointmentModal from './AppointmentModal'
+import DayColumnsView from './DayColumnsView'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { toast } from '@/hooks/useToast'
+
+type ViewMode = 'columns' | 'calendar'
 
 type ModalState =
   | { mode: 'closed' }
@@ -119,6 +122,12 @@ export default function CalendarView({
   const [error, setError] = useState(false)
   const [filterBarberId, setFilterBarberId] = useState<string | null>(null)
   const [modal, setModal] = useState<ModalState>({ mode: 'closed' })
+  const [viewMode, setViewMode] = useState<ViewMode>('columns')
+  const [columnsDate, setColumnsDate] = useState<Date>(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  })
 
   const fetchAppointments = useCallback(async (from: string, to: string) => {
     setLoading(true)
@@ -146,6 +155,34 @@ export default function CalendarView({
     currentRangeRef.current = { from: info.startStr, to: info.endStr }
     fetchAppointments(info.startStr, info.endStr)
   }, [fetchAppointments])
+
+  // En modo columnas, carga las citas del día seleccionado (FullCalendar no está montado).
+  useEffect(() => {
+    if (viewMode !== 'columns') return
+    const from = new Date(columnsDate); from.setHours(0, 0, 0, 0)
+    const to = new Date(columnsDate); to.setHours(23, 59, 59, 999)
+    currentRangeRef.current = { from: from.toISOString(), to: to.toISOString() }
+    fetchAppointments(from.toISOString(), to.toISOString())
+  }, [viewMode, columnsDate, fetchAppointments])
+
+  const shiftColumnsDay = useCallback((delta: number) => {
+    setColumnsDate(prev => {
+      const d = new Date(prev)
+      d.setDate(d.getDate() + delta)
+      return d
+    })
+  }, [])
+
+  const goColumnsToday = useCallback(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    setColumnsDate(d)
+  }, [])
+
+  const visibleBarberIds = useMemo(
+    () => (filterBarberId ? [filterBarberId] : barbers.map(b => b.id)),
+    [filterBarberId, barbers],
+  )
 
   const handleEventClick = useCallback((info: EventClickArg) => {
     const appointment = info.event.extendedProps.appointment as AppointmentWithRelations
@@ -288,6 +325,26 @@ export default function CalendarView({
 
         <div className="ml-auto flex items-center gap-3">
           {loading && <span className="text-xs" style={{ color: '#9B9BB0' }}>Cargando…</span>}
+          {/* Toggle de vista: columnas por barbero vs. calendario semanal */}
+          <div className="inline-flex rounded-lg p-0.5" style={{ background: '#F5F5F7' }}>
+            {(['columns', 'calendar'] as ViewMode[]).map(m => {
+              const active = viewMode === m
+              return (
+                <button
+                  key={m}
+                  onClick={() => setViewMode(m)}
+                  className="px-3 py-1 text-xs font-medium rounded-md transition-colors"
+                  style={
+                    active
+                      ? { background: '#FFFFFF', color: '#0E0D1A', boxShadow: '0 1px 2px rgba(14,13,26,0.08)' }
+                      : { color: '#6B6B8A' }
+                  }
+                >
+                  {m === 'columns' ? 'Columnas' : 'Calendario'}
+                </button>
+              )
+            })}
+          </div>
           <button
             onClick={() => setModal({ mode: 'create', start: new Date() })}
             className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
@@ -319,49 +376,97 @@ export default function CalendarView({
         ))}
       </div>
 
-      {/* Calendario */}
-      <div className="flex-1 px-4 pb-4 pt-3 min-h-0 relative">
+      {/* Cuerpo: vista columnas por barbero o calendario FullCalendar */}
+      <div className="flex-1 px-4 pb-4 pt-3 min-h-0 relative flex flex-col">
         {error ? (
           <ErrorState onRetry={retry} />
+        ) : viewMode === 'columns' ? (
+          <>
+            {/* Navegación de día */}
+            <div className="flex items-center gap-1.5 mb-3 flex-shrink-0">
+              <button
+                onClick={() => shiftColumnsDay(-1)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border-[1.5px] text-lg leading-none transition-colors"
+                style={{ borderColor: '#EDEDED', color: '#6B6B8A' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FAFAFA' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                aria-label="Día anterior"
+              >
+                ‹
+              </button>
+              <button
+                onClick={goColumnsToday}
+                className="px-3 h-8 text-xs font-medium rounded-lg border-[1.5px] transition-colors"
+                style={{ borderColor: '#EDEDED', color: '#6B6B8A' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FAFAFA' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              >
+                Hoy
+              </button>
+              <button
+                onClick={() => shiftColumnsDay(1)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border-[1.5px] text-lg leading-none transition-colors"
+                style={{ borderColor: '#EDEDED', color: '#6B6B8A' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FAFAFA' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                aria-label="Día siguiente"
+              >
+                ›
+              </button>
+              <span className="ml-2 text-sm font-medium capitalize" style={{ color: '#0E0D1A' }}>
+                {columnsDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </span>
+            </div>
+            <div className="flex-1 min-h-0 rounded-xl border overflow-hidden" style={{ borderColor: '#EDEDED', background: '#FFFFFF' }}>
+              <DayColumnsView
+                date={columnsDate}
+                barbers={barbers}
+                visibleBarberIds={visibleBarberIds}
+                appointments={allAppointments}
+                onSlotClick={(barberId, start) => setModal({ mode: 'create', start, barberId })}
+                onAppointmentClick={appt => setModal({ mode: 'edit', appointment: appt })}
+              />
+            </div>
+          </>
         ) : (
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
-          initialView="timeGridWeek"
-          locale={esLocale}
-          firstDay={1}
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay',
-          }}
-          slotMinTime="08:00:00"
-          slotMaxTime="22:00:00"
-          businessHours={[
-            { daysOfWeek: [1, 2, 3, 4, 5, 6], startTime: '11:00', endTime: '20:00' },
-            { daysOfWeek: [0], startTime: '10:00', endTime: '16:00' },
-          ]}
-          height="100%"
-          events={events}
-          editable
-          eventStartEditable
-          eventDurationEditable={false}
-          selectable
-          selectMirror
-          nowIndicator
-          allDaySlot={false}
-          slotDuration="00:30:00"
-          slotLabelInterval="01:00:00"
-          eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
-          eventContent={renderEvent}
-          datesSet={handleDatesSet}
-          eventClick={handleEventClick}
-          select={handleDateSelect}
-          eventDrop={handleEventDrop}
-        />
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+            initialView="timeGridWeek"
+            locale={esLocale}
+            firstDay={1}
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek,timeGridDay',
+            }}
+            slotMinTime="08:00:00"
+            slotMaxTime="22:00:00"
+            businessHours={[
+              { daysOfWeek: [1, 2, 3, 4, 5, 6], startTime: '11:00', endTime: '20:00' },
+              { daysOfWeek: [0], startTime: '10:00', endTime: '16:00' },
+            ]}
+            height="100%"
+            events={events}
+            editable
+            eventStartEditable
+            eventDurationEditable={false}
+            selectable
+            selectMirror
+            nowIndicator
+            allDaySlot={false}
+            slotDuration="00:30:00"
+            slotLabelInterval="01:00:00"
+            eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false, hour12: false }}
+            eventContent={renderEvent}
+            datesSet={handleDatesSet}
+            eventClick={handleEventClick}
+            select={handleDateSelect}
+            eventDrop={handleEventDrop}
+          />
         )}
-        {/* Estado vacío sutil: no hay citas en el rango visible */}
-        {!error && !loading && allAppointments.length === 0 && (
+        {/* Estado vacío sutil: no hay citas en el rango visible (modo calendario) */}
+        {!error && viewMode === 'calendar' && !loading && allAppointments.length === 0 && (
           <div className="pointer-events-none absolute inset-x-0 top-1/2 text-center">
             <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>No hay citas para hoy</p>
           </div>

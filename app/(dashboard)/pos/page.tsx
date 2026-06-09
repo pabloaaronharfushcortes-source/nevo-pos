@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionUser } from '@/lib/supabase/auth'
 import POSBoard from '@/components/pos/POSBoard'
-import type { SaleWithRelations, CashRegister } from '@/types/app'
+import type { SaleWithRelations, CashRegister, Product } from '@/types/app'
 
 export default async function POSPage() {
   const user = await getSessionUser()
@@ -11,18 +11,18 @@ export default async function POSPage() {
   const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
-  const [{ data: rawSales }, { data: barbers }, { data: services }, { data: register }] =
+  const [{ data: rawSales }, { data: barbers }, { data: services }, { data: products }, { data: register }] =
     await Promise.all([
       supabase
         .from('sales')
         .select(`
           id, tenant_id, appointment_id, queue_ticket_id, client_id, barber_id, cashier_id,
-          cash_register_id, subtotal, discount, total, payment_method, payment_reference,
+          cash_register_id, subtotal, discount, tip, total, payment_method, payment_reference,
           notes, created_at, deleted_at,
           client:clients(id, name),
           barber:barbers(id, name),
           cashier:users(id, name),
-          items:sale_items(id, type, name, price, quantity, subtotal, service_id)
+          items:sale_items(id, type, name, price, quantity, subtotal, service_id, product_id)
         `)
         .eq('tenant_id', user.tenantId)
         .is('deleted_at', null)
@@ -32,7 +32,7 @@ export default async function POSPage() {
 
       supabase
         .from('barbers')
-        .select('id, tenant_id, user_id, name, photo_url, commission_rate, is_active, sort_order, created_at')
+        .select('id, tenant_id, user_id, name, photo_url, commission_rate, is_active, sort_order, created_at, phone, email, bio, instagram, hired_at')
         .eq('tenant_id', user.tenantId)
         .eq('is_active', true)
         .order('sort_order'),
@@ -43,6 +43,13 @@ export default async function POSPage() {
         .eq('tenant_id', user.tenantId)
         .eq('is_active', true)
         .order('sort_order'),
+
+      supabase
+        .from('products')
+        .select('id, tenant_id, name, description, sku, price, cost, stock_quantity, stock_minimum, unit, is_active, created_at')
+        .eq('tenant_id', user.tenantId)
+        .eq('is_active', true)
+        .order('name'),
 
       supabase
         .from('cash_registers')
@@ -60,6 +67,7 @@ export default async function POSPage() {
         tenantId={user.tenantId}
         barbers={barbers ?? []}
         services={services ?? []}
+        products={(products ?? []) as Product[]}
         initialSales={(rawSales ?? []) as unknown as SaleWithRelations[]}
         initialRegister={register as CashRegister | null}
       />

@@ -12,7 +12,7 @@ export default async function AgendaPage() {
   const [{ data: barbers }, { data: services }] = await Promise.all([
     supabase
       .from('barbers')
-      .select('id, tenant_id, user_id, name, photo_url, commission_rate, is_active, sort_order, created_at')
+      .select('id, tenant_id, user_id, name, photo_url, commission_rate, is_active, sort_order, created_at, phone, email, bio, instagram, hired_at')
       .eq('is_active', true)
       .order('sort_order'),
     supabase
@@ -27,7 +27,7 @@ export default async function AgendaPage() {
       <div className="px-6 py-4 border-b flex-shrink-0" style={{ background: '#FFFFFF', borderColor: '#EDEDED' }}>
         <h1 className="font-display text-2xl font-semibold" style={{ color: '#0E0D1A' }}>Agenda</h1>
         <p className="text-sm mt-0.5" style={{ color: '#6B6B8A' }}>
-          Arrastra una cita para reagendarla
+          Vista por columnas o calendario · clic en un hueco para agendar
         </p>
       </div>
       <div className="flex-1 min-h-0">

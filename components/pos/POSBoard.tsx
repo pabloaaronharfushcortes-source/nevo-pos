@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Receipt } from 'lucide-react'
-import type { Barber, Service, SaleWithRelations, CashRegister } from '@/types/app'
+import type { Barber, Service, Product, SaleWithRelations, CashRegister } from '@/types/app'
 import CashRegisterWidget from './CashRegisterWidget'
 import SaleModal from './SaleModal'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -11,6 +11,7 @@ type Props = {
   tenantId: string
   barbers: Barber[]
   services: Service[]
+  products: Product[]
   initialSales: SaleWithRelations[]
   initialRegister: CashRegister | null
 }
@@ -33,6 +34,7 @@ const METHOD_LABEL: Record<string, string> = {
 export default function POSBoard({
   barbers,
   services,
+  products,
   initialSales,
   initialRegister,
 }: Props) {
@@ -139,6 +141,7 @@ export default function POSBoard({
         <SaleModal
           barbers={barbers}
           services={services}
+          products={products}
           preselectedBarberId={modalCtx.preselectedBarberId}
           clientId={modalCtx.clientId}
           clientName={modalCtx.clientName}

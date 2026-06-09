@@ -73,6 +73,17 @@ const SERVICES = [
   { name: 'Mechas',                        price: 1400, duration_minutes: 120, category: 'Tratamiento', sort_order: 8 },
 ]
 
+// Productos de reventa (inventario). Algunos con stock bajo a propósito para
+// demostrar la alerta de inventario del panel de configuración.
+const PRODUCTS = [
+  { name: 'Pomada mate 100g',        price: 220, cost: 110, stock_quantity: 18, stock_minimum: 5,  unit: 'pieza' },
+  { name: 'Cera modeladora 80g',     price: 180, cost: 90,  stock_quantity: 4,  stock_minimum: 5,  unit: 'pieza' },
+  { name: 'Shampoo anticaspa 250ml', price: 160, cost: 80,  stock_quantity: 12, stock_minimum: 4,  unit: 'pieza' },
+  { name: 'Aceite para barba 30ml',  price: 240, cost: 120, stock_quantity: 2,  stock_minimum: 3,  unit: 'pieza' },
+  { name: 'Loción after shave 120ml',price: 200, cost: 95,  stock_quantity: 9,  stock_minimum: 4,  unit: 'pieza' },
+  { name: 'Peine de carbono',        price: 90,  cost: 35,  stock_quantity: 25, stock_minimum: 6,  unit: 'pieza' },
+]
+
 // Placeholders — confirmar nombres reales con el negocio
 const BARBERS = [
   { name: 'Barbero1', commission_rate: 40, sort_order: 1 },
@@ -214,6 +225,7 @@ async function wipeTenant(tenantId: string) {
     { table: 'barber_schedules', field: 'barber_id' },
     { table: 'barbers',         field: 'tenant_id' },
     { table: 'services',        field: 'tenant_id' },
+    { table: 'products',        field: 'tenant_id' },
   ]
 
   // messages y sale_items no tienen tenant_id directo — los borramos vía joins
@@ -298,6 +310,15 @@ async function main() {
     'services'
   )
   console.log(`✓ Servicios: ${services.length}`)
+
+  // ── 3b. Productos (inventario) ───────────────────────────────────────────
+  const products = rows(
+    await db.from('products')
+      .insert(PRODUCTS.map(p => ({ ...p, tenant_id: tenant.id, is_active: true })))
+      .select('*'),
+    'products'
+  )
+  console.log(`✓ Productos: ${products.length}`)
 
   // ── 4. Barberos + horarios ────────────────────────────────────────────────
   const barbers = rows(

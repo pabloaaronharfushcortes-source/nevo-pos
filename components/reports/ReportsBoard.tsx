@@ -16,6 +16,19 @@ type BarberRow = {
   commission: number
 }
 
+type TopItem = {
+  type: string
+  name: string
+  quantity: number
+  revenue: number
+}
+
+type DailyTrend = {
+  date: string
+  revenue: number
+  count: number
+}
+
 type ReportData = {
   period: { from: string; to: string }
   summary: {
@@ -27,14 +40,22 @@ type ReportData = {
     averageTicket: number
     totalCommissions: number
     netRevenue: number
+    productRevenue: number
+    productUnits: number
   }
   byPaymentMethod: PaymentBreakdown
   byBarber: BarberRow[]
+  topItems: TopItem[]
+  dailyTrend: DailyTrend[]
 }
 
-// Escapa una celda CSV si contiene comas, comillas o saltos de línea
-function csvCell(value: string): string {
-  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+// Escapa texto para incrustarlo de forma segura en HTML
+function htmlEsc(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 const PAYMENT_LABEL: Record<string, string> = {
@@ -124,37 +145,75 @@ export default function ReportsBoard() {
     setRange(rangeForPreset(key))
   }
 
-  // Exporta el reporte actual a CSV (descarga local, sin servidor)
-  function exportCsv() {
+  // Exporta el reporte completo a Excel (.xls). Se genera un documento HTML con
+  // tablas que Excel/Numbers/Sheets abren como hoja de cálculo nativa — sin
+  // depender de librerías externas ni del servidor.
+  function exportExcel() {
     if (!data) return
-    const lines: string[] = []
-    lines.push(`Reporte,${range.from} a ${range.to}`)
-    lines.push('')
-    lines.push('Resumen,Valor')
-    lines.push(`Ingresos por servicios,${data.summary.serviceRevenue.toFixed(2)}`)
-    lines.push(`Propinas,${data.summary.totalTips.toFixed(2)}`)
-    lines.push(`Total cobrado,${data.summary.totalCollected.toFixed(2)}`)
-    lines.push(`Descuentos,${data.summary.totalDiscount.toFixed(2)}`)
-    lines.push(`Ventas,${data.summary.saleCount}`)
-    lines.push(`Ticket promedio,${data.summary.averageTicket.toFixed(2)}`)
-    lines.push(`Comisiones,${data.summary.totalCommissions.toFixed(2)}`)
-    lines.push(`Neto,${data.summary.netRevenue.toFixed(2)}`)
-    lines.push('')
-    lines.push('Barbero,Ventas,Ingresos,Propinas,Comision')
-    for (const b of data.byBarber) {
-      lines.push(`${csvCell(b.name)},${b.salesCount},${b.salesTotal.toFixed(2)},${b.tips.toFixed(2)},${b.commission.toFixed(2)}`)
-    }
-    lines.push('')
-    lines.push('Metodo de pago,Ventas,Total')
-    for (const [method, info] of Object.entries(data.byPaymentMethod)) {
-      lines.push(`${csvCell(PAYMENT_LABEL[method] ?? method)},${info.count},${info.total.toFixed(2)}`)
-    }
-    // BOM para que Excel reconozca UTF-8 (acentos)
-    const blob = new Blob([`﻿${lines.join('\n')}`], { type: 'text/csv;charset=utf-8;' })
+
+    const s = data.summary
+    const th = 'style="background:#FF6B6B;color:#fff;text-align:left;padding:4px 8px;font-family:Arial"'
+    const td = 'style="padding:4px 8px;font-family:Arial;border-bottom:1px solid #EDEDED"'
+    const num = 'style="padding:4px 8px;font-family:Arial;border-bottom:1px solid #EDEDED;text-align:right"'
+    const cap = 'style="font-family:Arial;font-size:13px;font-weight:bold;color:#0E0D1A;padding-top:14px"'
+
+    const parts: string[] = []
+    parts.push(
+      `<h2 style="font-family:Arial;color:#0E0D1A">Reporte NEVO · ${htmlEsc(range.from)} a ${htmlEsc(range.to)}</h2>`,
+    )
+
+    // 1. Resumen
+    parts.push(`<p ${cap}>Resumen</p>`)
+    parts.push('<table><tr>' + `<th ${th}>Concepto</th><th ${th}>Valor</th></tr>` +
+      `<tr><td ${td}>Ingresos por servicios</td><td ${num}>${s.serviceRevenue.toFixed(2)}</td></tr>` +
+      `<tr><td ${td}>Ingresos por productos</td><td ${num}>${s.productRevenue.toFixed(2)}</td></tr>` +
+      `<tr><td ${td}>Productos vendidos (uds)</td><td ${num}>${s.productUnits}</td></tr>` +
+      `<tr><td ${td}>Propinas (a barberos)</td><td ${num}>${s.totalTips.toFixed(2)}</td></tr>` +
+      `<tr><td ${td}>Total cobrado</td><td ${num}>${s.totalCollected.toFixed(2)}</td></tr>` +
+      `<tr><td ${td}>Descuentos</td><td ${num}>${s.totalDiscount.toFixed(2)}</td></tr>` +
+      `<tr><td ${td}>Ventas</td><td ${num}>${s.saleCount}</td></tr>` +
+      `<tr><td ${td}>Ticket promedio</td><td ${num}>${s.averageTicket.toFixed(2)}</td></tr>` +
+      `<tr><td ${td}>Comisiones</td><td ${num}>${s.totalCommissions.toFixed(2)}</td></tr>` +
+      `<tr><td ${td}>Neto</td><td ${num}>${s.netRevenue.toFixed(2)}</td></tr>` +
+      '</table>')
+
+    // 2. Métodos de pago
+    parts.push(`<p ${cap}>Métodos de pago</p>`)
+    parts.push('<table><tr>' + `<th ${th}>Método</th><th ${th}>Ventas</th><th ${th}>Total</th></tr>` +
+      Object.entries(data.byPaymentMethod).map(([method, info]) =>
+        `<tr><td ${td}>${htmlEsc(PAYMENT_LABEL[method] ?? method)}</td><td ${num}>${info.count}</td><td ${num}>${info.total.toFixed(2)}</td></tr>`,
+      ).join('') + '</table>')
+
+    // 3. Por barbero
+    parts.push(`<p ${cap}>Desempeño por barbero</p>`)
+    parts.push('<table><tr>' + `<th ${th}>Barbero</th><th ${th}>Ventas</th><th ${th}>Ingresos</th><th ${th}>Propinas</th><th ${th}>Comisión</th></tr>` +
+      data.byBarber.map(b =>
+        `<tr><td ${td}>${htmlEsc(b.name)}</td><td ${num}>${b.salesCount}</td><td ${num}>${b.salesTotal.toFixed(2)}</td><td ${num}>${b.tips.toFixed(2)}</td><td ${num}>${b.commission.toFixed(2)}</td></tr>`,
+      ).join('') + '</table>')
+
+    // 4. Artículos más vendidos
+    parts.push(`<p ${cap}>Artículos más vendidos</p>`)
+    parts.push('<table><tr>' + `<th ${th}>Artículo</th><th ${th}>Tipo</th><th ${th}>Cantidad</th><th ${th}>Ingresos</th></tr>` +
+      data.topItems.map(it =>
+        `<tr><td ${td}>${htmlEsc(it.name)}</td><td ${td}>${it.type === 'product' ? 'Producto' : 'Servicio'}</td><td ${num}>${it.quantity}</td><td ${num}>${it.revenue.toFixed(2)}</td></tr>`,
+      ).join('') + '</table>')
+
+    // 5. Tendencia por día
+    parts.push(`<p ${cap}>Tendencia por día</p>`)
+    parts.push('<table><tr>' + `<th ${th}>Fecha</th><th ${th}>Ventas</th><th ${th}>Ingresos</th></tr>` +
+      data.dailyTrend.map(d =>
+        `<tr><td ${td}>${htmlEsc(d.date)}</td><td ${num}>${d.count}</td><td ${num}>${d.revenue.toFixed(2)}</td></tr>`,
+      ).join('') + '</table>')
+
+    const html =
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">' +
+      '<head><meta charset="utf-8"></head><body>' + parts.join('') + '</body></html>'
+
+    const blob = new Blob([`﻿${html}`], { type: 'application/vnd.ms-excel;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `reporte-${range.from}-a-${range.to}.csv`
+    a.download = `reporte-${range.from}-a-${range.to}.xls`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -191,14 +250,14 @@ export default function ReportsBoard() {
             {range.from} → {range.to}
           </span>
           <button
-            onClick={exportCsv}
+            onClick={exportExcel}
             disabled={!data || data.summary.saleCount === 0}
             className="px-3 py-1.5 text-xs font-medium rounded-lg border-[1.5px] transition-colors disabled:opacity-40"
             style={{ borderColor: '#EDEDED', color: '#6B6B8A' }}
             onMouseEnter={e => { if (data && data.summary.saleCount > 0) { (e.currentTarget as HTMLElement).style.background = '#F5EEFF'; (e.currentTarget as HTMLElement).style.borderColor = '#E4D6FF' } }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.borderColor = '#EDEDED' }}
           >
-            Exportar CSV
+            Exportar Excel
           </button>
         </div>
       </div>
@@ -285,6 +344,72 @@ export default function ReportsBoard() {
                 </table>
               </div>
             </div>
+
+            {/* Artículos más vendidos (servicios y productos) */}
+            {data.topItems.length > 0 && (
+              <div>
+                <p className="label-caps mb-3">Artículos más vendidos</p>
+                <div className="space-y-1.5">
+                  {(() => {
+                    const maxRev = Math.max(...data.topItems.map(i => i.revenue), 1)
+                    return data.topItems.map(it => {
+                      const isProduct = it.type === 'product'
+                      const pct = (it.revenue / maxRev) * 100
+                      return (
+                        <div key={`${it.type}-${it.name}`} className="p-3 rounded-xl" style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED' }}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-sm flex items-center gap-2 min-w-0" style={{ color: '#0E0D1A' }}>
+                              <span className="truncate">{it.name}</span>
+                              <span
+                                className="text-2xs px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium"
+                                style={isProduct
+                                  ? { background: '#FFE8E8', color: '#E85555' }
+                                  : { background: '#F0E6FF', color: '#8B3FFF' }}
+                              >
+                                {isProduct ? 'Producto' : 'Servicio'}
+                              </span>
+                              <span className="text-2xs flex-shrink-0" style={{ color: '#9B9BB0' }}>×{it.quantity}</span>
+                            </span>
+                            <span className="num text-sm font-medium flex-shrink-0" style={{ color: '#0E0D1A' }}>
+                              {MXN(it.revenue)}
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full" style={{ background: '#EDEDED' }}>
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: isProduct ? '#FF6B6B' : '#A259FF' }} />
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Tendencia por día */}
+            {data.dailyTrend.length > 0 && (
+              <div>
+                <p className="label-caps mb-3">Tendencia por día</p>
+                <div
+                  className="p-4 rounded-xl flex items-end gap-1.5"
+                  style={{ background: '#FAFAFA', border: '1.5px solid #EDEDED', height: 180 }}
+                >
+                  {(() => {
+                    const maxRev = Math.max(...data.dailyTrend.map(d => d.revenue), 1)
+                    return data.dailyTrend.map(d => {
+                      const h = Math.max(2, (d.revenue / maxRev) * 130)
+                      const label = new Date(`${d.date}T00:00:00`).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
+                      return (
+                        <div key={d.date} className="flex-1 min-w-0 flex flex-col items-center justify-end gap-1" title={`${label}: ${MXN(d.revenue)} · ${d.count} ventas`}>
+                          <span className="num text-2xs" style={{ color: '#6B6B8A' }}>{MXN(d.revenue)}</span>
+                          <div className="w-full rounded-t-md" style={{ height: h, background: '#FF6B6B', minWidth: 6 }} />
+                          <span className="text-2xs whitespace-nowrap" style={{ color: '#9B9BB0' }}>{label}</span>
+                        </div>
+                      )
+                    })
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

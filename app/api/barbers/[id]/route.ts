@@ -4,11 +4,15 @@ import { getSessionUser } from '@/lib/supabase/auth'
 import { ok, err } from '@/lib/utils/api-response'
 import { readJsonBody, idParamSchema } from '@/lib/validation'
 import { updateBarberSchema } from '@/lib/validation/settings'
+import type { TablesUpdate } from '@/types/database'
 
 const BARBER_COLS =
-  'id, tenant_id, user_id, name, photo_url, commission_rate, is_active, sort_order, created_at'
+  'id, tenant_id, user_id, name, photo_url, commission_rate, is_active, sort_order, created_at, phone, email, bio, instagram, hired_at'
 
 type Params = { params: { id: string } }
+
+// Campos de texto/fecha donde una cadena vacía debe persistirse como NULL
+const NULLABLE_FIELDS = ['photo_url', 'phone', 'email', 'bio', 'instagram', 'hired_at'] as const
 
 // PATCH /api/barbers/:id — actualizar barbero (incluye desactivar con is_active=false)
 export async function PATCH(request: NextRequest, { params }: Params) {
@@ -23,10 +27,19 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const parsed = updateBarberSchema.safeParse(await readJsonBody(request))
     if (!parsed.success) return err('Datos inválidos', 400, parsed.error.flatten())
 
+    // Normaliza cadenas vacías a NULL (columnas nullable, en especial hired_at: date)
+    const patch: TablesUpdate<'barbers'> = { ...parsed.data }
+    for (const field of NULLABLE_FIELDS) {
+      if (patch[field] === '') patch[field] = null
+    }
+    if (typeof patch.instagram === 'string') {
+      patch.instagram = patch.instagram.replace(/^@/, '').trim() || null
+    }
+
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('barbers')
-      .update(parsed.data)
+      .update(patch)
       .eq('id', parsedParams.data.id)
       .select(BARBER_COLS)
       .single()

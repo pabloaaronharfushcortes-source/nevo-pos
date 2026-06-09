@@ -85,6 +85,21 @@ export async function POST(request: NextRequest) {
       return err('Conflicto de horario: el barbero ya tiene una cita en ese horario', 409)
     }
 
+    // Bloqueos de horario del barbero (vacaciones/permisos) — Módulo 4.
+    // Se omite de forma segura si la tabla aún no existe (migración pendiente).
+    const { count: blocks, error: blockError } = await supabase
+      .from('barber_time_off')
+      .select('*', { count: 'exact', head: true })
+      .eq('barber_id', barberId)
+      .lt('starts_at', endsAt)
+      .gt('ends_at', startsAt)
+
+    if (blockError) {
+      console.warn('[api/appointments POST] verificación de bloqueos omitida:', blockError.message)
+    } else if (blocks && blocks > 0) {
+      return err('El barbero tiene un bloqueo de horario en ese periodo', 409)
+    }
+
     const { data: appointment, error: insertError } = await supabase
       .from('appointments')
       .insert({

@@ -1,20 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import type { Barber, Service, SaleWithRelations } from '@/types/app'
+import type { Barber, Service, Product, SaleWithRelations } from '@/types/app'
 import { toast } from '@/hooks/useToast'
 
 type LineItem = {
   tempId: string
+  type: 'service' | 'product'
   serviceId?: string
+  productId?: string
   name: string
   price: number
   quantity: number
+  maxStock?: number // tope de cantidad para productos (stock disponible)
 }
 
 type Props = {
   barbers: Barber[]
   services: Service[]
+  products?: Product[]
   preselectedBarberId?: string
   initialItems?: Array<{ serviceId?: string; name: string; price: number }>
   clientId?: string
@@ -45,6 +49,7 @@ function buildInitialItems(
   if (!initialItems?.length) return []
   return initialItems.map(item => ({
     tempId: nextId(),
+    type: 'service' as const,
     serviceId: item.serviceId,
     name: item.name,
     price: item.price,
@@ -55,6 +60,7 @@ function buildInitialItems(
 export default function SaleModal({
   barbers,
   services,
+  products = [],
   preselectedBarberId,
   initialItems,
   clientId,
@@ -76,6 +82,7 @@ export default function SaleModal({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showServicePicker, setShowServicePicker] = useState(false)
+  const [showProductPicker, setShowProductPicker] = useState(false)
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const serviceTotal = Math.max(0, subtotal - discount)
@@ -94,9 +101,37 @@ export default function SaleModal({
   function addService(service: Service) {
     setItems(prev => [
       ...prev,
-      { tempId: nextId(), serviceId: service.id, name: service.name, price: service.price, quantity: 1 },
+      { tempId: nextId(), type: 'service', serviceId: service.id, name: service.name, price: service.price, quantity: 1 },
     ])
     setShowServicePicker(false)
+  }
+
+  function addProduct(product: Product) {
+    // Si ya está en el carrito, incrementa la cantidad (respetando stock)
+    setItems(prev => {
+      const existing = prev.find(i => i.type === 'product' && i.productId === product.id)
+      if (existing) {
+        const cap = existing.maxStock ?? Infinity
+        return prev.map(i =>
+          i.tempId === existing.tempId
+            ? { ...i, quantity: Math.min(cap, i.quantity + 1) }
+            : i,
+        )
+      }
+      return [
+        ...prev,
+        {
+          tempId: nextId(),
+          type: 'product' as const,
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: 1,
+          maxStock: product.stock_quantity,
+        },
+      ]
+    })
+    setShowProductPicker(false)
   }
 
   function removeItem(tempId: string) {
@@ -105,16 +140,17 @@ export default function SaleModal({
 
   function changeQty(tempId: string, delta: number) {
     setItems(prev =>
-      prev.map(i => i.tempId === tempId
-        ? { ...i, quantity: Math.max(1, i.quantity + delta) }
-        : i
-      )
+      prev.map(i => {
+        if (i.tempId !== tempId) return i
+        const cap = i.type === 'product' ? i.maxStock ?? Infinity : Infinity
+        return { ...i, quantity: Math.min(cap, Math.max(1, i.quantity + delta)) }
+      })
     )
   }
 
   async function handleSubmit() {
     if (!selectedBarberId) { setError('Selecciona un barbero'); return }
-    if (!items.length) { setError('Agrega al menos un servicio'); return }
+    if (!items.length) { setError('Agrega al menos un artículo'); return }
 
     setSubmitting(true)
     setError(null)
@@ -126,7 +162,9 @@ export default function SaleModal({
         body: JSON.stringify({
           barberId: selectedBarberId,
           items: items.map(i => ({
+            type: i.type,
             serviceId: i.serviceId,
+            productId: i.productId,
             name: i.name,
             price: i.price,
             quantity: i.quantity,
@@ -213,35 +251,79 @@ export default function SaleModal({
           {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium" style={{ color: '#0E0D1A' }}>Servicios</label>
-              <div className="relative">
-                <button
-                  onClick={() => setShowServicePicker(v => !v)}
-                  className="text-xs px-2.5 py-1 rounded-md font-medium transition-colors"
-                  style={{ background: '#F0E6FF', color: '#8B3FFF' }}
-                >
-                  + Agregar
-                </button>
-                {showServicePicker && (
-                  <div
-                    className="absolute right-0 top-7 z-10 bg-white rounded-lg shadow-lg w-56 py-1 max-h-48 overflow-y-auto border-[1.5px]"
-                    style={{ borderColor: '#EDEDED' }}
+              <label className="text-xs font-medium" style={{ color: '#0E0D1A' }}>Artículos</label>
+              <div className="flex items-center gap-2">
+                {/* Picker de servicios */}
+                <div className="relative">
+                  <button
+                    onClick={() => { setShowServicePicker(v => !v); setShowProductPicker(false) }}
+                    className="text-xs px-2.5 py-1 rounded-md font-medium transition-colors"
+                    style={{ background: '#F0E6FF', color: '#8B3FFF' }}
                   >
-                    {services.length === 0 && (
-                      <p className="px-3 py-2 text-sm" style={{ color: '#9B9BB0' }}>Sin servicios</p>
-                    )}
-                    {services.map(s => (
-                      <button
-                        key={s.id}
-                        onMouseDown={() => addService(s)}
-                        className="w-full text-left px-3 py-2 text-sm flex justify-between transition-colors hover:bg-[#F5EEFF]"
-                      >
-                        <span style={{ color: '#0E0D1A' }}>{s.name}</span>
-                        <span style={{ color: '#6B6B8A' }}>${s.price.toFixed(2)}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                    + Servicio
+                  </button>
+                  {showServicePicker && (
+                    <div
+                      className="absolute right-0 top-7 z-10 bg-white rounded-lg shadow-lg w-56 py-1 max-h-48 overflow-y-auto border-[1.5px]"
+                      style={{ borderColor: '#EDEDED' }}
+                    >
+                      {services.length === 0 && (
+                        <p className="px-3 py-2 text-sm" style={{ color: '#9B9BB0' }}>Sin servicios</p>
+                      )}
+                      {services.map(s => (
+                        <button
+                          key={s.id}
+                          onMouseDown={() => addService(s)}
+                          className="w-full text-left px-3 py-2 text-sm flex justify-between transition-colors hover:bg-[#F5EEFF]"
+                        >
+                          <span style={{ color: '#0E0D1A' }}>{s.name}</span>
+                          <span style={{ color: '#6B6B8A' }}>${s.price.toFixed(2)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Picker de productos */}
+                <div className="relative">
+                  <button
+                    onClick={() => { setShowProductPicker(v => !v); setShowServicePicker(false) }}
+                    className="text-xs px-2.5 py-1 rounded-md font-medium transition-colors"
+                    style={{ background: '#FFE8E8', color: '#E85555' }}
+                  >
+                    + Producto
+                  </button>
+                  {showProductPicker && (
+                    <div
+                      className="absolute right-0 top-7 z-10 bg-white rounded-lg shadow-lg w-60 py-1 max-h-48 overflow-y-auto border-[1.5px]"
+                      style={{ borderColor: '#EDEDED' }}
+                    >
+                      {products.filter(p => p.is_active).length === 0 && (
+                        <p className="px-3 py-2 text-sm" style={{ color: '#9B9BB0' }}>Sin productos</p>
+                      )}
+                      {products.filter(p => p.is_active).map(p => {
+                        const out = p.stock_quantity <= 0
+                        return (
+                          <button
+                            key={p.id}
+                            disabled={out}
+                            onMouseDown={() => { if (!out) addProduct(p) }}
+                            className="w-full text-left px-3 py-2 text-sm flex justify-between items-center gap-2 transition-colors hover:bg-[#FFF0F0] disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <span className="flex-1 min-w-0 truncate" style={{ color: '#0E0D1A' }}>{p.name}</span>
+                            <span
+                              className="text-2xs tabular-nums flex-shrink-0"
+                              style={{ color: out ? '#E85555' : '#9B9BB0' }}
+                            >
+                              {out ? 'Agotado' : `${p.stock_quantity} ${p.unit}`}
+                            </span>
+                            <span className="flex-shrink-0" style={{ color: '#6B6B8A' }}>${p.price.toFixed(2)}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -250,13 +332,23 @@ export default function SaleModal({
                 className="text-sm py-4 text-center border border-dashed rounded-lg"
                 style={{ color: '#9B9BB0', borderColor: '#D4D4E0' }}
               >
-                Sin servicios — agrega uno
+                Sin artículos — agrega un servicio o producto
               </p>
             ) : (
               <div className="space-y-2">
                 {items.map(item => (
                   <div key={item.tempId} className="flex items-center gap-2 text-sm">
-                    <span className="flex-1" style={{ color: '#0E0D1A' }}>{item.name}</span>
+                    <span className="flex-1 flex items-center gap-1.5 min-w-0">
+                      <span className="truncate" style={{ color: '#0E0D1A' }}>{item.name}</span>
+                      {item.type === 'product' && (
+                        <span
+                          className="text-2xs px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium"
+                          style={{ background: '#FFE8E8', color: '#E85555' }}
+                        >
+                          Producto
+                        </span>
+                      )}
+                    </span>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => changeQty(item.tempId, -1)}
