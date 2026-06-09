@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:tenant-isolation": "node scripts/tenant-isolation-test.mjs",
+    "test:multiagent": "npx tsx scripts/multi-agent-test.ts",
     "test:load": "k6 run tests/load/webhook.js",
     "seed": "npx tsx scripts/seed.ts",
     "simulate": "npx tsx scripts/simulate.ts",

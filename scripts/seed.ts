@@ -312,13 +312,18 @@ async function main() {
   console.log(`✓ Servicios: ${services.length}`)
 
   // ── 3b. Productos (inventario) ───────────────────────────────────────────
-  const products = rows(
-    await db.from('products')
-      .insert(PRODUCTS.map(p => ({ ...p, tenant_id: tenant.id, is_active: true })))
-      .select('*'),
-    'products'
-  )
-  console.log(`✓ Productos: ${products.length}`)
+  // La migración de productos (Fase 2) puede no estar aplicada en este entorno.
+  // Si la tabla no existe, se omite con aviso en lugar de abortar el seed.
+  const productsRes = await db.from('products')
+    .insert(PRODUCTS.map(p => ({ ...p, tenant_id: tenant.id, is_active: true })))
+    .select('*')
+  let products: Array<{ id: string }> = []
+  if (productsRes.error) {
+    console.warn(`⚠ Productos omitidos: ${(productsRes.error as { message?: string }).message ?? productsRes.error}`)
+  } else {
+    products = (productsRes.data ?? []) as Array<{ id: string }>
+    console.log(`✓ Productos: ${products.length}`)
+  }
 
   // ── 4. Barberos + horarios ────────────────────────────────────────────────
   const barbers = rows(

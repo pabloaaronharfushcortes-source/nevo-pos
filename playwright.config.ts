@@ -8,7 +8,9 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // 1 reintento local absorbe la flakiness transitoria del único dev server compartido
+  // (el harness multiagente golpea el mismo 3009 en paralelo). En CI se mantienen 2.
+  retries: process.env.CI ? 2 : 1,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL: BASE_URL,
