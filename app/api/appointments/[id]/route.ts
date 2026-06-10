@@ -113,9 +113,18 @@ export async function PATCH(
       .update(update)
       .eq('id', params.id)
       .select(APPOINTMENT_SELECT)
-      .single()
+      .maybeSingle()
 
-    if (error) throw error
+    // El EXCLUDE constraint (appointments_no_overlap) rechaza de forma atómica un
+    // reagendado que solape otra cita del mismo barbero → 409, no 500.
+    if (error) {
+      if ((error as { code?: string }).code === '23P01') {
+        return err('Conflicto de horario: el barbero ya tiene una cita en ese horario', 409)
+      }
+      throw error
+    }
+    // maybeSingle() devuelve null (sin error) cuando el id no existe → 404, no 500.
+    if (!data) return err('Cita no encontrada', 404)
 
     return NextResponse.json(data)
   } catch (error) {

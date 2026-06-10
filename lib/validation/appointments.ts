@@ -12,9 +12,16 @@ const APPOINTMENT_STATUSES = [
 const BOOKED_VIA = ['whatsapp', 'web', 'reception', 'app'] as const
 
 // GET /api/appointments?from=&to=
+// from/to deben ser fechas parseables: una fecha basura (ej. "FECHA_INVALIDA")
+// se rechaza con 400 en la capa de validación en lugar de llegar a Postgres y
+// reventar con un 500 (robustez — el harness prueba este caso explícitamente).
+const dateLike = (label: string) =>
+  z.string().min(1, `Parámetro ${label} requerido`)
+    .refine((v) => !Number.isNaN(Date.parse(v)), { message: `Parámetro ${label} no es una fecha válida` })
+
 export const appointmentsQuerySchema = z.object({
-  from: z.string().min(1, 'Parámetro from requerido'),
-  to: z.string().min(1, 'Parámetro to requerido'),
+  from: dateLike('from'),
+  to: dateLike('to'),
 })
 
 // POST /api/appointments

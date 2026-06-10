@@ -116,7 +116,17 @@ export async function POST(request: NextRequest) {
       .select(APPOINTMENT_SELECT)
       .single()
 
-    if (insertError) throw insertError
+    // Guardia DURO de concurrencia: el verificador read-then-insert de arriba puede
+    // dejar pasar varios requests simultáneos al mismo slot (race). El EXCLUDE
+    // constraint a nivel de BD (appointments_no_overlap) garantiza que solo UNO gane;
+    // los demás reciben una violación de exclusión (Postgres 23P01) que traducimos a
+    // 409 — misma semántica que el conflicto detectado en la app.
+    if (insertError) {
+      if ((insertError as { code?: string }).code === '23P01') {
+        return err('Conflicto de horario: el barbero ya tiene una cita en ese horario', 409)
+      }
+      throw insertError
+    }
 
     return NextResponse.json(appointment, { status: 201 })
   } catch (error) {
